@@ -1,5 +1,3 @@
-include("be.jl")
-
 storage=Dict()
 storage[:players]=[(1,0,0),(0,1,0),(0,0,1),(1,1,1)]
 storage[:player]=1
@@ -24,13 +22,11 @@ storage[:printscore]=true
 backgroundcolor=[0,0,0]
 gridcolor=[1,1,1]
 
+include("be.jl")
 using Gtk, Graphics
-c = @GtkCanvas()
-win = GtkWindow(c, "Weilianqi",storage[:window][1],storage[:window][2])
+#c=@GtkCanvas()
+#win=GtkWindow(c, "Weilianqi",900,700)
 #storage[:ctx]=getgc(c)
-
-
-initgame([(0,0,2),(6,6,2)])
 
 function hex_to_pixel(q,r,size=storage[:size])
     x = size * sqrt(3) * (q + r/2)
@@ -91,11 +87,163 @@ function drawboard(ctx,w,h)
 		end
 	end
 end
+function drawboard(game,ctx,w,h)
+	size=game.board.size
+	rectangle(ctx, 0, 0, w, h)
+	set_source_rgb(ctx, game.board.bgcolor...)
+	fill(ctx)
+	set_source_rgb(ctx, game.color...)
+	arc(ctx, size, size, 3size, 0, 2pi)
+	fill(ctx)
+	set_source_rgb(ctx, game.board.gridcolor...)
+	for loc in game.board.grid
+		if loc[3]==2
+			x,y=hex_to_pixel(loc[1],loc[2],size)
+			hexlines(ctx,x+w/2+game.board.offsetx,y+h/2+game.board.offsety,size)
+		end
+	end
+	for move in game.map
+		if move[2]!=(0,0,0)
+			set_source_rgb(ctx, move[2]...)
+			offset=(game.board.offsetx,game.board.offsety)
+			if move[1][3]==1
+				offset=offset.+(-cos(pi/6)*size,sin(pi/6)*size)
+			elseif move[1][3]==3
+				offset=offset.+(-cos(pi/6)*size,-sin(pi/6)*size)
+			end
+			loc=hex_to_pixel(move[1][1],move[1][2])
+			arc(ctx, loc[1]+offset[1]+w/2, loc[2]+offset[2]+h/2, size/3, 0, 2pi)
+			fill(ctx)
+			set_source_rgb(ctx,game.board.gridcolor...)
+			#arc(ctx, loc[1]+offset[1]+w/2, loc[2]+offset[2]+h/2, size/3, 0, 2pi)
+			#stroke(ctx)
+		end
+	end
+end
+
+type Unit
+	color
+	ir #influence radius
+	pl #permitted layers
+end
+type Board
+	shells::Integer #layers of locations to add to the initial ones
+	initlocs #initial locations
+	grid
+	c #GtkCanvas
+	win #GtkWindow
+	window #initial aspect ratio
+	sizemod #zoom
+	size
+	offsetx #pan
+	offsety
+	bgcolor #background
+	gridcolor
+end
+type Game
+	map
+	unit::Unit #to be placed
+	color 
+	colors
+	colmax::Integer #return to first color after max
+	colock::Bool #place a single color
+	delete::Bool #delete colors
+	sequence::Array #placed units
+	board::Board
+	printscore::Bool
+end
+function newunit(color=(1,0,0),ir=3,pl=[2])
+	return Unit(color,ir,pl)
+end
+function newboard(shells=6,initlocs=[(0,0,2)],grid=0,c=@GtkCanvas(),win=0,window=(900,700),sizemod=5,size=30,offsetx=0,offsety=0,bgcolor=(0,0,0),gridcolor=(1,1,1))
+	if grid==0
+		grid=makegrid(shells,initlocs)
+	end
+	if win==0
+		win=GtkWindow(c, "Weilianqi",window[1],window[2])
+	end
+	board=Board(shells,initlocs,grid,c,win,window,sizemod,size,offsetx,offsety,bgcolor,gridcolor)
+	return board
+end
+function newgame(boardparams=[],unitparams=[],map=Dict(),unit=0,color=(1,0,0),colors=[(1,0,0),(0,1,0),(0,0,1),(1,1,1)],colmax=3,colock=false,delete=false,sequence=[Unit((0,0,2),(1,1,1),3,[2])],board=0,printscore=false)
+	if board==0
+		board=newboard(boardparams...)
+	end
+	if unit==0
+		unit=newunit(unitparams...)
+	end
+	for loc in board.grid
+		map[loc]=(0,0,0)
+	end
+	game=Game(map,unit,color,colors,colmax,colock,delete,sequence,board,printscore)
+	placeseq(game.sequence,game.map)
+	@guarded function drawsignal(widget)
+		ctx=getgc(widget)
+		h=height(widget)
+		w=width(widget)
+		drawboard(game,ctx,w,h)
+	end
+	draw(drawsignal,game.board.c)
+	game.board.c.mouse.button1press = @guarded (widget, event) -> begin
+		ctx = getgc(widget)
+		h = height(c)
+		w = width(c)
+		size=game.board.size
+		q,r=pixel_to_hex(event.x-w/2-game.board.offsetx,event.y-h/2-game.board.offsety)
+		maindiff=abs(round(q)-q)+abs(round(r)-r)
+		qup,rup=pixel_to_hex(event.x-w/2+size*cos(pi/6),event.y-h/2+sin(pi/6)*size)
+		updiff=abs(round(qup)-qup)+abs(round(rup)-rup)
+		qdown,rdown=pixel_to_hex(event.x-w/2+size*cos(pi/6),event.y-h/2-sin(pi/6)*size)
+		downdiff=abs(round(qdown)-qdown)+abs(round(rdown)-rdown)
+		best=findmin([maindiff,updiff,downdiff])[2]
+		hex=[(round(Int,q),round(Int,r),2),(round(Int,qup),round(Int,rup),3),(round(Int,qdown),round(Int,rdown),1)][best]
+		if in(hex[3],game.unitparams.pl)
+			exists=in(hex,keys(game.map))
+			if exists
+				if game.delete==true && game.map[hex]!=0
+					game.map[hex]=0
+					push!(game.sequence,(hex,0))
+				elseif game.map[hex]==0
+					game.map[hex]=newunit(game.unitparams...)
+					push!(storage[:sequence],(hex,storage[:player]))
+					hs=adjacent(hex)
+					push!(hs,hex)
+					for he in hs
+						if in(he,keys(storage[:map]))
+							g=getgroup(he)
+							if !isempty(g) && liberties(g)==0
+								for gh in g
+									storage[:map][gh]=0
+								end
+							end
+						end
+					end
+					if !storage[:lock]
+						storage[:player]=storage[:player]%storage[:np]+1
+					end
+				end
+				if storage[:printscore]
+					printscore()
+				end
+			end
+		end
+		drawboard(ctx,w,h)
+		reveal(widget)
+	end
+	show(game.board.c)
+	return game
+end
+
+
+
+initgame([(0,0,2),(6,6,2)])
+
+
 
 if storage[:printscore]
 	printscore()
 end
-
+#=
 @guarded draw(c) do widget
     ctx = getgc(c)
     h = height(c)
@@ -107,6 +255,21 @@ end
 	size=storage[:size]
 	drawboard(ctx,w,h)
 end
+
+
+@guarded function drawsignal(widget)
+	    ctx = getgc(widget)
+    h = height(widget)
+    w = width(widget)
+	storage[:window]=(w,h)
+	storage[:size]=storage[:window][2]/(storage[:layers]*storage[:sizemod])
+    
+	set_source_rgb(ctx,0,0,0)
+	size=storage[:size]
+	drawboard(ctx,w,h)
+end
+draw(drawsignal,c)
+
 
 c.mouse.button1press = @guarded (widget, event) -> begin
     ctx = getgc(widget)
@@ -157,3 +320,4 @@ c.mouse.button1press = @guarded (widget, event) -> begin
 	reveal(widget)
 end
 show(c)
+=#

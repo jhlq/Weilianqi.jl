@@ -1,9 +1,12 @@
-saveseq=()->write("saves/$(round(Integer,time())).txt","$(storage[:sequence])")
+saveseq=(game)->write("saves/$(round(Integer,time())).txt","$(game.sequence)")
+function placeseq(seq,map,originoffset=(0,0,0))
+	for unit in seq
+		map[unit.loc.+originoffset]=unit.color
+	end
+end
 function loadseq(filename,originoffset=(0,0,0))
 	push!(storage[:sequence],eval(parse(read("saves/"*filename,String))))
-	for move in storage[:sequence]
-		storage[:map][move[1].+originoffset]=move[2]
-	end
+	placeseq()
 end
 
 function makegrid(layers=3,startlocs=[(0,0,2)])
