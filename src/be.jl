@@ -163,12 +163,8 @@ end
 function influence(game,hex,layer=true,passover=false,passoverself=true,inclusive=true)
 	unit=game.map[hex]
 	white=(1,1,1)
-#	if player==0
-#		return []
-#	end
 	group=Dict(hex=>6.0)
 	temp=Dict(hex=>6.0)
-#	while !isempty(temp)
 	for rad in 1:unit.ir
 		temp2=Dict()
 		for t in temp
@@ -236,7 +232,6 @@ function harvest(game,layer=2,bools=(true,false,true,true))
 			end
 		end
 	end
-	#brgbt[5]=sum(brgbt)
 	for c in 2:4
 		brgbw[c]-=brgbw[5]
 	end
