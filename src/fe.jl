@@ -32,6 +32,8 @@ type Game
 	sequence::Array #placed units
 	board::Board
 	printscore::Bool
+	points
+	season::Integer #number of harvests
 end
 
 function hex_to_pixel(q,r,size)
@@ -110,7 +112,7 @@ function newboard(shells=6,initlocs=[(0,0,2)],grid=0,c=@GtkCanvas(),win=0,window
 	if win==0
 		win=GtkWindow(c, "Weilianqi",window[1],window[2])
 	end
-	board=Board(shells,initlocs,grid,c,win,window,sizemod,size,offsetx,offsety,bgcolor,gridcolor)
+	board=Board(shells,initlocs,grid,c,win,window, sizemod,size,offsetx,offsety,bgcolor,gridcolor)
 	return board
 end
 function allowedat(unitparams,loc)
@@ -120,15 +122,40 @@ function allowedat(unitparams,loc)
 	end
 	return yes
 end
-function newgame(boardparams=[],unitparams=[(1,0,0),3,[2]],map=Dict(),unit=0,color=(1,0,0),colors=[(1,0,0),(0,1,0),(0,0,1),(1,1,1)],colind=1,colmax=3,colock=false,delete=false,sequence=[((0,0,2),Unit((1,1,1),3,[2]))],board=0,printscore=false)
+function unitcost(game,loc,unitparams)
+	distance=nearestwhite(game,loc)
+	cost=distance*unitparams[2]
+	cost*=sum(unitparams[1]) #only if sum>1?
+	return cost
+end
+function subtractcost(game,cost,color)
+	rgb=cost.*color
+	if rgb[1]<=game.points[2] && rgb[2]<=game.points[3] && rgb[3]<=game.points[4]
+		game.points[2]-=rgb[1]
+		game.points[3]-=rgb[2]
+		game.points[4]-=rgb[3]
+		return true
+	elseif sum(rgb)<=game.points[5] #add prefered spending order to units
+		game.points[5]-=sum(rgb)
+		return true
+	elseif sum(rgb)<=game.points[1]
+		game.points[1]-=sum(rgb)
+		return true
+	end
+	return false
+end
+function newgame(boardparams=[],unitparams=[(1,0,0),3,[2]],map=Dict(),unit=0,color=(1,0,0),colors=[(1,0,0),(0,1,0),(0,0,1),(1,1,1)],colind=1,colmax=3,colock=false,delete=false,sequence=[((0,0,2),Unit((1,1,1),3,[2]))],board=0,printscore=false,points=0,season=0)
 	if board==0
 		board=newboard(boardparams...)
 	end
 	for loc in board.grid
 		map[loc]=0
 	end
-	game=Game(map,unitparams,color,colors,colind,colmax,colock,delete,sequence,board,printscore)
+	game=Game(map,unitparams,color,colors,colind,colmax, colock,delete,sequence,board,printscore,points,season)
 	placeseq(game.sequence,game.map)
+	if points==0
+		harvest(game)
+	end
 	@guarded function drawsignal(widget)
 		ctx=getgc(widget)
 		h=height(widget)
@@ -158,6 +185,12 @@ function newgame(boardparams=[],unitparams=[(1,0,0),3,[2]],map=Dict(),unit=0,col
 					game.map[hex]=0
 					push!(game.sequence,(hex,0))
 				elseif game.map[hex]==0
+					cost=unitcost(game,hex,game.unitparams)
+					afforded=subtractcost(game,cost,game.unitparams[1])
+					if !afforded
+						println("Not enough points.")
+						return
+					end
 					nu=newunit(game.unitparams...)
 					game.map[hex]=nu
 					push!(game.sequence,(hex,nu))
@@ -189,4 +222,8 @@ function newgame(boardparams=[],unitparams=[(1,0,0),3,[2]],map=Dict(),unit=0,col
 	end
 	show(game.board.c)
 	return game
+end
+function harvest(game::Game)
+	game.season+=1
+	game.points+=peekharvest(game)
 end

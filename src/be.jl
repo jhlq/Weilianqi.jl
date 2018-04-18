@@ -216,7 +216,7 @@ function numcolors(rgb)
 	end
 	return nc
 end
-function harvest(game,layer=2,bools=(true,false,true,true))
+function peekharvest(game,layer=2,bools=(true,false,true,true))
 	influencemap=allinfluence(game,layer,bools)
 	brgbw=[0.0,0,0,0,0]
 	for (iloc,inf) in influencemap
@@ -251,8 +251,33 @@ function pass()
 	storage[:player]=storage[:player]%storage[:np]+1
 end
 function printpoints(game)
-	harv=round.(harvest(game),1,10)
+	harv=round.(peekharvest(game),1,10)
 	println("Black: ",harv[1]," Red: ",harv[2]," Green: ",harv[3]," Blue: ",harv[4]," White: ",harv[5])#," Total: ",sum(harv))
 end
-
+function nearestwhite(game,hex,layer=true)
+	white=(1,1,1)
+	group=[hex]
+	temp=[hex]
+	for rad in 1:game.board.shells*9
+		temp2=[]
+		for t in temp
+			for h in adjacent(t,1,layer)
+				if in(h,keys(game.map))
+					unit=game.map[h]
+					if unit!=0 && unit.color==white
+						return rad
+					end
+					if !in(h,group) && !in(h,temp) && !in(h,temp2)  
+						push!(temp2,h)
+					end
+				end
+			end
+		end
+		for h2 in temp2
+			push!(group,h2)
+		end
+		temp=temp2
+	end
+	return Inf
+end
 

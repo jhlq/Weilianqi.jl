@@ -1,5 +1,5 @@
 module Weilianqi
-export newgame,printpoints
+export newgame,printpoints,harvest
 
 include("fe.jl")
 
