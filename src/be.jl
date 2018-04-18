@@ -1,7 +1,7 @@
 saveseq=(game)->write("saves/$(round(Integer,time())).txt","$(game.sequence)")
 function placeseq(seq,map,originoffset=(0,0,0))
-	for unit in seq
-		map[unit.loc.+originoffset]=unit.color
+	for (loc,unit) in seq
+		map[loc.+originoffset]=unit
 	end
 end
 function loadseq(filename,originoffset=(0,0,0))
@@ -78,19 +78,19 @@ function initgame(startlocs=[(0,0,2)])
 	placewhite(storage[:spacing]) 
 end
 
-function resetmap()
-	for loc in storage[:grid]
-		storage[:map][loc]=0
+function resetmap(game)
+	for loc in game.board.grid
+		game.map[loc]=0
 	end
-	#drawboard()
-	#reveal(c,true)
+	drawboard(game)
+	reveal(game.board.c)
 end
 
 
 
-function getgroup(hex)
-	player=storage[:map][hex]
-	white=length(storage[:players])
+function getgroup(game,hex)
+	player=game.map[hex]
+	white=(1,1,1)
 	if player==0
 		return []
 	end
@@ -100,7 +100,7 @@ function getgroup(hex)
 		temp2=Tuple[]
 		for t in temp
 			for h in adjacent(t)
-				if !in(h,group) && !in(h,temp) && !in(h,temp2) && in(h,keys(storage[:map])) && (storage[:map][h]==player || storage[:map][h]==white)
+				if !in(h,group) && !in(h,temp) && !in(h,temp2) && in(h,keys(game.map)) && (game.map[h]==player || game.map[h]==white)
 					push!(temp2,h)
 				end
 			end
@@ -160,29 +160,27 @@ function freelocs(layer=2)
 	return (free,tot)
 end
 
-function influence(hex,radius=3,layer=true,passover=false,passoverself=true,inclusive=true)
-	player=storage[:map][hex]
-	white=length(storage[:players])
+function influence(game,hex,layer=true,passover=false,passoverself=true,inclusive=true)
+	unit=game.map[hex]
+	white=(1,1,1)
 #	if player==0
 #		return []
 #	end
 	group=Dict(hex=>6.0)
 	temp=Dict(hex=>6.0)
 #	while !isempty(temp)
-	for rad in 1:radius
+	for rad in 1:unit.ir
 		temp2=Dict()
 		for t in temp
 			for h in adjacent(t[1],1,layer)
-				if !in(h,keys(group)) && !in(h,keys(temp)) && !in(h,keys(temp2)) && in(h,keys(storage[:map])) #&& (storage[:map][h]==player || storage[:map][h]==white)
+				if !in(h,keys(group)) && !in(h,keys(temp)) && !in(h,keys(temp2)) && in(h,keys(game.map)) 
 					inf=1/rad
-					if storage[:map][h]==0
+					if game.map[h]==0 || passover
 						temp2[h]=inf
-					elseif passoverself && (storage[:map][h]==player || storage[:map][h]==white)
-						temp2[h]=inf
-					elseif passover && storage[:map][h]!=0
+					elseif passoverself && (game.map[h].color==unit.color || game.map[h].color==white)
 						temp2[h]=inf
 					end
-					if inclusive && storage[:map][h]!=0 && !in(h,keys(temp2))
+					if inclusive && game.map[h]!=0 && !in(h,keys(temp2))
 						group[h]=inf
 					end
 				end
@@ -195,17 +193,17 @@ function influence(hex,radius=3,layer=true,passover=false,passoverself=true,incl
 	end
 	return group
 end
-function allinfluence(radius=3,layer=2,bools=(true,false,true,true))
+function allinfluence(game,layer=2,bools=(true,false,true,true))
 	influencemap=Dict()
-	for (loc,player) in storage[:map]
+	for (loc,player) in game.map
 		if loc[3]==layer
 			influencemap[loc]=[0.0,0,0]
 		end
 	end
-	for (loc,player) in storage[:map]
-		if player!=0
-			col=storage[:players][player]
-			infl=influence(loc,radius,bools...)
+	for (loc,unit) in game.map
+		if unit!=0
+			col=unit.color
+			infl=influence(game,loc,bools...)
 			for inf in infl
 				influencemap[inf[1]].+=inf[2].*col
 			end
@@ -222,8 +220,8 @@ function numcolors(rgb)
 	end
 	return nc
 end
-function harvest(radius=3,layer=2,bools=(true,false,true,true))
-	influencemap=allinfluence(radius,layer,bools)
+function harvest(game,layer=2,bools=(true,false,true,true))
+	influencemap=allinfluence(game,layer,bools)
 	brgbw=[0.0,0,0,0,0]
 	for (iloc,inf) in influencemap
 		ninf=numcolors(inf)
@@ -257,9 +255,9 @@ end
 function pass()
 	storage[:player]=storage[:player]%storage[:np]+1
 end
-function printscore()
-	harv=round.(harvest(),1,10)
-	println("Black: ",harv[1]," Red: ",harv[2]," Green: ",harv[3]," Blue: ",harv[4]," White: ",harv[5]," Total: ",sum(harv))
+function printpoints(game)
+	harv=round.(harvest(game),1,10)
+	println("Black: ",harv[1]," Red: ",harv[2]," Green: ",harv[3]," Blue: ",harv[4]," White: ",harv[5])#," Total: ",sum(harv))
 end
 
 

@@ -1,7 +1,13 @@
 # Weilianqi
 
-[![Build Status](https://travis-ci.org/jhlq/Weilianqi.jl.svg?branch=master)](https://travis-ci.org/jhlq/Weilianqi.jl)
+Welcome to a fun and beneficial game that trains the mind and teamwork skills!
 
-[![Coverage Status](https://coveralls.io/repos/jhlq/Weilianqi.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/jhlq/Weilianqi.jl?branch=master)
+Wei-lian-qi is chinese for surround-connect-game. To play it first start julia then type:
+`
+Pkg.clone("https://github.com/jhlq/Weilianqi.jl") #if you haven't already
+using Weilianqi
+game=newgame();
+printpoints(game) #after clicking a few times on the intersections of the board
+`
 
-[![codecov.io](http://codecov.io/github/jhlq/Weilianqi.jl/coverage.svg?branch=master)](http://codecov.io/github/jhlq/Weilianqi.jl?branch=master)
+What is the objective? There are many! One is to figure out how the scoring system works!
