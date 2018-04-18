@@ -1,0 +1,52 @@
+text based setup -> start game screen
+	num players, board size, num white units, white unit spacing, scoring rules
+	terrain -> seasons
+zoom
+	click white unit (also for spawning?)
+scoring
+	connections
+		check only ground level?
+	connecting white units
+	harvesting, store in white units
+	manual editing
+	influence, check if surrounded
+	many kinds of points
+		surrounded by G and B -> GB points
+		doubly surrounded -> ? maybe filter out rgb from RGB, Rgb->Rb->R or Rrb->Rb->R
+		top/bottom surrounded
+		white helps
+	R eats from G who eats from B who eats from R
+	R emits r
+	surrounded points in a layer
+units
+	free unit that generates 1 point per turn from where it is placed
+	units that can jump from where it is spawned
+	cost rules, arbitrary harvesting, up(down)grading
+	combine colored points to harvest multiple colors
+	movable units, programmable
+	tunnel/bridge units, 3/9 times cost?
+	solar harvester
+		made from G harvests green points, upgrade with RB
+database
+	changes
+	location
+		terrain, units, misc
+		type Loc?
+
+
+How about letting players move simultaneously and let their moves be in superpositions? Either resolved randomly where players may lay extra potential moves or by playing another game on the contested location.
+Keep count on how many times each player has begun. No official komi, no official winner
+Material is created with shapes they are surrounded to
+Units emit pointgas so balance in colored units provide optimal gaspoints
+type Game, save(game)
+make borders on units so white doesnt disappear
+Units decay, white unit can auto repair. Units not connected to white decay
+Placing units further from the white costs more. Or how about letting the distance one can place at increase as more points are gathered. Charge level on white unit also determines rate of placement
+Choosing an arbitrary color and connecting to the center is like creating an account for that spot.
+Get group should include white, then checking for white connection is trivial
+White units are storage for points and charging them becomes harder and harder, so by making roads one can distribute the points over many white points making it easier to gain points
+Harvesting gains points, bonds multiply points
+Influence majority determines paths
+white points: [1,3,2]=>[0,2,1]+1wp
+highways of mixed color can transport each color less but combined more
+a point cost per distance influence & 1 point cost per distance moved
