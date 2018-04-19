@@ -11,8 +11,6 @@ type Board
 	initlocs #initial locations
 	grid
 	c #GtkCanvas
-	win #GtkWindow
-	window #initial aspect ratio
 	sizemod #zoom
 	size
 	offsetx #pan
@@ -34,6 +32,8 @@ type Game
 	printscore::Bool
 	points
 	season::Integer #number of harvests
+	win #GtkWindow
+	window #initial aspect ratio
 end
 
 function hex_to_pixel(q,r,size)
@@ -93,6 +93,7 @@ function drawboard(game,ctx,w,h)
 			#stroke(ctx)
 		end
 	end
+	#showall(game.board.win)
 end
 function drawboard(game::Game)
 	ctx=getgc(game.board.c)
@@ -105,14 +106,11 @@ end
 function newunit(color=(1,0,0),ir=3,pl=[2])
 	return Unit(color,ir,pl)
 end
-function newboard(shells=6,initlocs=[(0,0,2)],grid=0,c=@GtkCanvas(),win=0,window=(900,700),sizemod=5,size=30,offsetx=0,offsety=0,bgcolor=(0,0,0),gridcolor=(1,1,1))
+function newboard(shells=6,initlocs=[(0,0,2)],grid=0,c=@GtkCanvas(),sizemod=5,size=30,offsetx=0,offsety=0,bgcolor=(0,0,0),gridcolor=(1,1,1))
 	if grid==0
 		grid=makegrid(shells,initlocs)
 	end
-	if win==0
-		win=GtkWindow(c, "Weilianqi",window[1],window[2])
-	end
-	board=Board(shells,initlocs,grid,c,win,window, sizemod,size,offsetx,offsety,bgcolor,gridcolor)
+	board=Board(shells,initlocs,grid,c, sizemod,size,offsetx,offsety,bgcolor,gridcolor)
 	return board
 end
 function allowedat(unitparams,loc)
@@ -130,38 +128,72 @@ function unitcost(game,loc,unitparams)
 end
 function subtractcost(game,cost,color)
 	rgb=cost.*color
+	srgb=sum(rgb)
 	if rgb[1]<=game.points[2] && rgb[2]<=game.points[3] && rgb[3]<=game.points[4]
 		game.points[2]-=rgb[1]
 		game.points[3]-=rgb[2]
 		game.points[4]-=rgb[3]
-		return true
-	elseif sum(rgb)<=game.points[5] #add prefered spending order to units
-		game.points[5]-=sum(rgb)
-		return true
-	elseif sum(rgb)<=game.points[1]
-		game.points[1]-=sum(rgb)
-		return true
+	elseif srgb<=game.points[5] && srgb<=game.points[1]
+		subtr=5
+		if game.points[1]>game.points[5]
+			subtr=1
+		end
+		game.points[subtr]-=srgb
+	elseif srgb<=game.points[5] 
+		game.points[5]-=srgb
+	elseif srgb<=game.points[1]
+		game.points[1]-=srgb
+	else
+		return false
 	end
-	return false
+	return true
 end
-function newgame(boardparams=[],unitparams=[(1,0,0),3,[2]],map=Dict(),unit=0,color=(1,0,0),colors=[(1,0,0),(0,1,0),(0,0,1),(1,1,1)],colind=1,colmax=3,colock=false,delete=false,sequence=[((0,0,2),Unit((1,1,1),3,[2]))],board=0,printscore=false,points=0,season=0)
+function harvest(game::Game)
+	game.season+=1
+	game.points+=peekharvest(game)
+end
+function pointslabel(game)
+	points=round.(game.points,3)
+	return "Points!\nBlack:\t$(points[1]) \nRed:\t$(points[2]) \nGreen:\t$(points[3]) \nBlue:\t$(points[4]) \nWhite: $(points[5]) \nSeason:\t $(game.season) "
+end
+function newgame(boardparams=[],unitparams=[(1,0,0),3,[2]],map=Dict(),unit=0,color=(1,0,0),colors=[(1,0,0),(0,1,0),(0,0,1),(1,1,1)],colind=1,colmax=3,colock=false,delete=false,sequence=[((0,0,2),Unit((1,1,1),3,[2]))],board=0,printscore=false,points=0,season=0,win=0,window=(900,700))
 	if board==0
 		board=newboard(boardparams...)
 	end
 	for loc in board.grid
 		map[loc]=0
 	end
-	game=Game(map,unitparams,color,colors,colind,colmax, colock,delete,sequence,board,printscore,points,season)
+	game=Game(map,unitparams,color,colors,colind,colmax, colock,delete,sequence,board,printscore,points,season,win,window)
 	placeseq(game.sequence,game.map)
 	if points==0
 		harvest(game)
+	end
+	if win==0
+		box=GtkBox(:h)
+		#frame=GtkFrame(game.board.c,"Canvas")
+		harvestbtn=GtkButton("Harvest")
+		label=GtkLabel(pointslabel(game))
+		g=GtkGrid()
+		g[1,1]=harvestbtn
+		g[1,2]=label
+		push!(box,game.board.c)	
+		push!(box,g)
+		setproperty!(box,:expand,game.board.c,true)
+		game.win=GtkWindow(box,"Weilianqi",window[1],window[2])
+		showall(game.win)
+		#
+		#push!(win,g)
+		id = signal_connect(harvestbtn, "clicked") do widget
+			harvest(game)
+			GAccessor.text(label,pointslabel(game))
+		end
 	end
 	@guarded function drawsignal(widget)
 		ctx=getgc(widget)
 		h=height(widget)
 		w=width(widget)
-		game.board.window=(w,h)
-		game.board.size=game.board.window[2]/(game.board.shells*game.board.sizemod)
+		game.window=(w,h)
+		game.board.size=game.window[2]/(game.board.shells*game.board.sizemod)
 		drawboard(game,ctx,w,h)
 	end
 	draw(drawsignal,game.board.c)
@@ -215,6 +247,7 @@ function newgame(boardparams=[],unitparams=[(1,0,0),3,[2]],map=Dict(),unit=0,col
 				if game.printscore
 					printpoints(game)
 				end
+				GAccessor.text(label,pointslabel(game))
 			end
 		end
 		drawboard(game,ctx,w,h)
@@ -223,7 +256,4 @@ function newgame(boardparams=[],unitparams=[(1,0,0),3,[2]],map=Dict(),unit=0,col
 	show(game.board.c)
 	return game
 end
-function harvest(game::Game)
-	game.season+=1
-	game.points+=peekharvest(game)
-end
+

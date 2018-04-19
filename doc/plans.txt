@@ -52,3 +52,4 @@ highways of mixed color can transport each color less but combined more
 a point cost per distance influence & 1 point cost per distance moved
 influencegroup, check if connected to white
 store records and saves in .weilianqi
+units to implement their own costfunction
