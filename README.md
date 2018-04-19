@@ -8,7 +8,7 @@ Pkg.add("Gtk") #unless already installed
 Pkg.clone("https://github.com/jhlq/Weilianqi.jl") #if you haven't already
 using Weilianqi
 game=newgame();
-printpoints(game) #after clicking a few times on the intersections of the board
+harvest(game) #after clicking a few times on the intersections of the board
 ```
 
 What is the objective? There are many! One is to figure out how the scoring system works!
