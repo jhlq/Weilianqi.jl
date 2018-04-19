@@ -1,6 +1,7 @@
 module Weilianqi
-export newgame,printpoints,harvest
+export newgame,printpoints,harvest,zoom
+using Gtk, Graphics
 
-include("fe.jl")
+include("qi.jl")
 
 end # module

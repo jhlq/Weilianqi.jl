@@ -1,3 +1,5 @@
+include("types.jl")
+
 saveseq=(game)->write("saves/$(round(Integer,time())).txt","$(game.sequence)")
 function placeseq(seq,map,originoffset=(0,0,0))
 	for (loc,unit) in seq
@@ -160,7 +162,7 @@ function freelocs(layer=2)
 	return (free,tot)
 end
 
-function influence(game,hex,layer=true,passover=false,passoverself=true,inclusive=true)
+function influence(game,hex,groundlevel=false,passover=false,passoverself=true,inclusive=true)
 	unit=game.map[hex]
 	white=(1,1,1)
 	group=Dict(hex=>6.0)
@@ -168,7 +170,7 @@ function influence(game,hex,layer=true,passover=false,passoverself=true,inclusiv
 	for rad in 1:unit.ir
 		temp2=Dict()
 		for t in temp
-			for h in adjacent(t[1],1,layer)
+			for h in adjacent(t[1],1,groundlevel)
 				if !in(h,keys(group)) && !in(h,keys(temp)) && !in(h,keys(temp2)) && in(h,keys(game.map)) 
 					inf=1/rad
 					if game.map[h]==0 || passover
@@ -237,6 +239,129 @@ function peekharvest(game,groundlevel=false,bools=(true,false,true,true))
 	end
 	return brgbw
 end
+function spreadlife!(game,unit,lifemap)
+	white=(1,1,1)
+	hex=unit.loc
+	lifemap[hex].+=unit.baselife.*unit.color
+	temp=Dict(hex=>unit.baselife)
+	checked=[hex]
+	for rad in 1:unit.ir
+		temp2=Dict()
+		for t in temp
+			for h in adjacent(t[1],1,unit.groundlevel)
+				if !in(h,keys(temp)) && !in(h,keys(temp2)) && !in(h,checked) && in(h,game.board.grid) 
+					lif=(unit.baselife/6/rad).*unit.color
+					if game.map[h]==0 || unit.passover
+						temp2[h]=lif
+					elseif unit.passoverself && (game.map[h].color==unit.color || game.map[h].color==white)
+						temp2[h]=lif
+					elseif unit.inclusive && game.map[h]!=0 #&& !in(h,keys(temp2))
+						lifemap[h].+=lif
+					end
+				end
+				push!(checked,h)
+			end
+		end
+		for (h2,i2) in temp2
+			lifemap[h2].+=i2
+		end
+		temp=temp2
+	end
+	return lifemap
+end
+function allunitslive!(game)
+	lifemap=Dict()
+	for loc in game.board.grid
+		lifemap[loc]=[0.0,0,0]
+	end
+	for (loc,unit) in game.map
+		if isa(unit,Unit)
+			unit.live!(game,unit,lifemap)
+		end
+	end
+	game.lifemap=lifemap
+	return lifemap
+end
+function getpoints!(game,unit,loc,distance)
+	l=game.lifemap[loc]
+	lif=distance==0?unit.baselife:(unit.baselife/6/distance)
+	ncol=numcolors(l)
+	points=[0.0,0,0,0,0]
+	if ncol==3
+		points[5]=min(min(l...),lif,1)
+		l.-=points[5]
+		lif-=points[5]
+	end
+	if ncol==1
+		ci=l[1]==0?(l[2]==0?3:2):1
+		points[1]=min(l[ci],lif,1)
+		game.lifemap[loc][ci]-=points[1]
+		lif-=points[1]
+	else
+		lifc=lif.*unit.color
+		for c in 1:3
+			if lifc[c]>0
+				points[c+1]+=min(lifc[c],l[c%3+1],1)
+				game.lifemap[loc][c%3+1]-=points[c+1]
+			end
+		end
+	end
+	game.points.+=points
+	#println(points,loc)
+	return points
+end
+function unitharvest!(game,unit)
+	white=(1,1,1)
+	#lifemap[hex]+=unit.baselife.*unit.color
+	getpoints!(game,unit,unit.loc,0)
+	temp=[unit.loc]
+	checked=[unit.loc]
+	points=[0.0,0,0,0,0]
+	for rad in 1:unit.ir
+		temp2=[]
+		for t in temp
+			for h in adjacent(t,1,unit.groundlevel)
+				if !in(h,temp) &&!in(h,checked) && in(h,game.board.grid) 
+#					lif=(unit.baselife/6/rad).*unit.color
+					if game.map[h]==0 || unit.passover
+						points+=getpoints!(game,unit,h,rad)
+						push!(temp2,h)
+					elseif unit.passoverself && (game.map[h].color==unit.color || game.map[h].color==white)
+						points+=getpoints!(game,unit,h,rad)
+						push!(temp2,h)
+					elseif unit.inclusive && game.map[h]!=0
+						points+=getpoints!(game,unit,h,rad)
+					end
+				end
+				push!(checked,h)
+			end
+		end
+#		for (h2,i2) in temp2
+#			lifemap[h2].+=i2
+#		end
+		temp=temp2
+	end
+	return points
+end
+function allunitsharvest!(game)
+	#groundlevel=false
+	#if unit.pl=[2]
+	#	groundlevel=true
+	#end
+	#bools=(unit.passover,unit.passoverself,unit.inclusive)
+	#influencemap=allinfluence(game,unit.groundlevel,bools)
+	allunitslive!(game)
+	points=[0.0,0,0,0,0]
+	for (loc,unit) in game.map
+		if unit!=0
+			points.+=unit.harvest!(game,unit)
+#			println(points)
+		end
+	end
+	#game.points.+=points
+	game.season+=1
+	return points
+end
 
 function undo() #wont undo captures?
 	hex=pop!(storage[:sequence])
@@ -246,10 +371,6 @@ function undo() #wont undo captures?
 		storage[:player]=storage[:np]
 	end
 	return hex
-end
-function pass(game)
-	game.colind=game.colind%game.colmax+1
-	game.color=game.colors[colind]
 end
 function printpoints(game)
 	harv=round.(peekharvest(game),1,10)
@@ -280,5 +401,30 @@ function nearestwhite(game,hex,layer=false)
 		temp=temp2
 	end
 	return Inf
+end
+function hex_to_pixel(q,r,size)
+    x = size * sqrt(3) * (q + r/2)
+    y = size * 3/2 * r
+    return x, y
+end
+function pixel_to_hex(x,y,size)
+    q = (x * sqrt(3)/3 - y / 3) / size
+    r = y * 2/3 / size
+    return (q, r)
+end
+
+function triangle(ctx,x,y,size,up=-1)
+	polygon(ctx, [Point(x,y),Point(x+size,y),Point(x+size/2,y+up*size)])
+	fill(ctx)
+end
+function hexlines(ctx,x,y,size)
+	size*=2
+	move_to(ctx,x-size/4,y-size*sin(pi/3)/2)
+	rel_line_to(ctx,size/2,size*sin(pi/3))
+	move_to(ctx,x-size/2,y)
+	rel_line_to(ctx,size,0)
+	move_to(ctx,x+size/4,y-size*sin(pi/3)/2)
+	rel_line_to(ctx,-size/2,size*sin(pi/3))
+	stroke(ctx)
 end
 

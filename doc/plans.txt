@@ -19,7 +19,7 @@ scoring
 	R emits r
 	surrounded points in a layer
 units
-	free unit that generates 1 point per turn from where it is placed
+	unit that generates 1 point per turn from where it is placed
 	units that can jump from where it is spawned
 	cost rules, arbitrary harvesting, up(down)grading
 	combine colored points to harvest multiple colors
@@ -27,6 +27,19 @@ units
 	tunnel/bridge units, 3/9 times cost?
 	solar harvester
 		made from G harvests green points, upgrade with RB
+		black absorbs light..!
+	type Unit
+		loc
+		passover
+		passoverself
+		inclusive
+		cost
+		removecost
+		spreadinfluence(game)
+		harvest(influencemap)
+	WhiteUnit.harvest=[12,0,0,0,12]
+	unitspecdict
+	initialize with dict?
 database
 	changes
 	location
@@ -53,3 +66,4 @@ a point cost per distance influence & 1 point cost per distance moved
 influencegroup, check if connected to white
 store records and saves in .weilianqi
 units to implement their own costfunction
+let units cost their color or black+white?

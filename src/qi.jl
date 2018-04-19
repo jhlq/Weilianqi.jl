@@ -1,66 +1,5 @@
-include("be.jl")
-using Gtk, Graphics
+include("units.jl")
 
-type Unit
-	color
-	ir #influence radius
-	pl #permitted layers
-end
-type Board
-	shells::Integer #layers of locations to add to the initial ones
-	initlocs #initial locations
-	grid
-	c #GtkCanvas
-	sizemod #zoom
-	size
-	offsetx #pan
-	offsety
-	bgcolor #background
-	gridcolor
-end
-type Game
-	map
-	unitparams #to be placed
-	color 
-	colors
-	colind::Integer #index
-	colmax::Integer #return to first color after max
-	colock::Bool #place a single color
-	delete::Bool #delete units
-	sequence::Array #placed units
-	board::Board
-	printscore::Bool
-	points
-	season::Integer #number of harvests
-	win #GtkWindow
-	window #initial aspect ratio
-end
-
-function hex_to_pixel(q,r,size)
-    x = size * sqrt(3) * (q + r/2)
-    y = size * 3/2 * r
-    return x, y
-end
-function pixel_to_hex(x,y,size)
-    q = (x * sqrt(3)/3 - y / 3) / size
-    r = y * 2/3 / size
-    return (q, r)
-end
-
-function triangle(ctx,x,y,size,up=-1)
-	polygon(ctx, [Point(x,y),Point(x+size,y),Point(x+size/2,y+up*size)])
-	fill(ctx)
-end
-function hexlines(ctx,x,y,size)
-	size*=2
-	move_to(ctx,x-size/4,y-size*sin(pi/3)/2)
-	rel_line_to(ctx,size/2,size*sin(pi/3))
-	move_to(ctx,x-size/2,y)
-	rel_line_to(ctx,size,0)
-	move_to(ctx,x+size/4,y-size*sin(pi/3)/2)
-	rel_line_to(ctx,-size/2,size*sin(pi/3))
-	stroke(ctx)
-end
 function drawboard(game,ctx,w,h)
 	game.board.size=game.window[2]/(game.board.shells*game.board.sizemod)
 	size=game.board.size
@@ -104,7 +43,19 @@ function drawboard(game::Game)
 	drawboard(game,ctx,w,h)
 end
 
-
+function newunit(color,loc,unitspec::Dict)
+	ir=haskey(unitspec,:ir)?unitspec[:ir]:3
+	pl=haskey(unitspec,:pl)?unitspec[:pl]:[2]
+	passover=haskey(unitspec,:passover)?unitspec[:passover]:false
+	passoverself=haskey(unitspec,:passoverself)?unitspec[:passoverself]:true
+	inclusive=haskey(unitspec,:inclusive)?unitspec[:inclusive]:true
+	groundlevel=haskey(unitspec,:groundlevel)?unitspec[:groundlevel]:true
+	live=haskey(unitspec,:live!)?unitspec[:live!]:spreadlife!
+	baselife=haskey(unitspec,:baselife)?unitspec[:baselife]:6
+	harvest=haskey(unitspec,:harvest!)?unitspec[:harvest!]:(game,unit)->[0.0,0,0,0,0]
+	name=haskey(unitspec,:name)?unitspec[:name]:""
+	return Unit(color,ir,pl,passover,passoverself,inclusive,loc,groundlevel,live,baselife,harvest,name)
+end
 function newunit(color=(1,0,0),ir=3,pl=[2])
 	return Unit(color,ir,pl)
 end
@@ -151,17 +102,17 @@ function pointslabel(game)
 	points=round.(game.points,3)
 	return "Points!\nBlack:\t$(points[1]) \nRed:\t$(points[2]) \nGreen:\t$(points[3]) \nBlue:\t$(points[4]) \nWhite: $(points[5]) \nSeason: $(game.season) "
 end
-function newgame(boardparams=[],unitparams=[(1,0,0),3,[2]],map=Dict(),unit=0,color=(1,0,0),colors=[(1,0,0),(0,1,0),(0,0,1),(1,1,1)],colind=1,colmax=3,colock=false,delete=false,sequence=[((0,0,2),Unit((1,1,1),3,[2]))],board=0,printscore=false,points=0,season=0,win=0,window=(900,700))
+function newgame(boardparams=[],unitparams=[(1,0,0),3,[2],"standard"],map=Dict(),unit=0,color=(1,0,0),colors=[(1,0,0),(0,1,0),(0,0,1),(1,1,1)],colind=1,colmax=3,colock=false,delete=false,sequence=[((0,0,2),newunit((1,1,1),(0,0,2),units["white"]))],board=0,printscore=false,points=[0.0,0,0,0,0],season=0,win=0,window=(900,700))
 	if board==0
 		board=newboard(boardparams...)
 	end
 	for loc in board.grid
 		map[loc]=0
 	end
-	game=Game(map,unitparams,color,colors,colind,colmax, colock,delete,sequence,board,printscore,points,season,win,window)
+	game=Game(map,unitparams,color,colors,colind,colmax, colock,delete,sequence,board,printscore,points,season,win,window,0)
 	placeseq(game.sequence,game.map)
-	if points==0
-		harvest(game)
+	if points==[0,0,0,0,0]
+		allunitsharvest!(game)
 	end
 	if win==0
 		box=GtkBox(:h)
@@ -178,7 +129,7 @@ function newgame(boardparams=[],unitparams=[(1,0,0),3,[2]],map=Dict(),unit=0,col
 		game.win=GtkWindow(box,"Weilianqi",window[1],window[2])
 		showall(game.win)
 		id = signal_connect(harvestbtn, "clicked") do widget
-			harvest(game)
+			allunitsharvest!(game)
 			GAccessor.text(label,pointslabel(game))
 		end
 		id = signal_connect(passbtn, "clicked") do widget
@@ -220,7 +171,8 @@ function newgame(boardparams=[],unitparams=[(1,0,0),3,[2]],map=Dict(),unit=0,col
 						println("Not enough points.")
 						return
 					end
-					nu=newunit(game.unitparams...)
+					#nu=newunit(game.unitparams...)
+					nu=newunit(game.color,hex,units[game.unitparams[4]])
 					game.map[hex]=nu
 					push!(game.sequence,(hex,nu))
 #					hs=adjacent(hex)	#this checks if captured
@@ -275,6 +227,11 @@ function expandboard(game::Game,shells::Integer=6,initlocs=[(6,6,2)],basecost=50
 end
 function zoom(game,factor)
 	game.board.sizemod*=factor
+	drawboard(game)
+end
+function pass(game)
+	game.colind=game.colind%game.colmax+1
+	game.color=game.colors[game.colind]
 	drawboard(game)
 end
 
