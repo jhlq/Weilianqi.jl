@@ -360,6 +360,7 @@ function allunitsharvest!(game)
 	end
 	#game.points.+=points
 	game.season+=1
+	push!(game.sequence,:harvest)
 	return points
 end
 

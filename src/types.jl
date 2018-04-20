@@ -33,7 +33,7 @@ type Game
 	colmax::Integer #return to first color after max
 	colock::Bool #place a single color
 	delete::Bool #delete units
-	sequence::Array{Tuple{Tuple{Int64,Int64,Int64},Any},1} #placed units
+	sequence::Array{Any} #Tuple{Tuple{Int64,Int64,Int64},Any},1} #placed units and performed harvests
 	board::Board
 	printscore::Bool
 	points

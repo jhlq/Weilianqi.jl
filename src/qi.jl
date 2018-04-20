@@ -239,13 +239,23 @@ function save(game)
 	write(io,string(game.sequence))
 	close(io)
 end
-savelite=(game)->write("~/.weilianqi/$(round(Integer,time())).txt","$(game.sequence)")
-function placeseq(seq,map,originoffset=(0,0,0))
-	for (loc,unit) in seq
-		map[loc.+originoffset]=unit
+#savelite=(game)->write("~/.weilianqi/$(round(Integer,time())).txt","$(game.sequence)")
+function loadsequence(game::Game,seqstr::String,originoffset=(0,0,0))
+	seq=eval(parse(seqstr))
+	for entry in seq
+		if entry==:harvest
+			allunitsharvest!(game)
+		else
+			(loc,unit)=entry
+			loco=loc.+originoffset
+			game.map[loco]=unit
+			push!(game.sequence,(loco,unit))
+		end
 	end
+	drawboard(game)
+	return true
 end
-function loadseq(filename,originoffset=(0,0,0))
-	push!(storage[:sequence],eval(parse(read("saves/"*filename,String))))
-	placeseq()
-end
+#function loadseq(filename,originoffset=(0,0,0))
+#	push!(storage[:sequence],eval(parse(read("saves/"*filename,String))))
+#	placeseq()
+#end
