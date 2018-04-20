@@ -115,21 +115,38 @@ function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=[(
 		box=GtkBox(:h)
 		harvestbtn=GtkButton("Harvest")
 		label=GtkLabel(pointslabel(game))
-		passbtn=GtkButton("Pass")
+		passbtn=GtkButton("Next color (overrides colorlock)")
+		#colabel=GtkLabel(string(game.color))
 		autoharvestcheck = GtkCheckButton("Autoharvest")
 		setproperty!(autoharvestcheck,:active,game.autoharvest)
 		colockcheck = GtkCheckButton("Lock color")
 		setproperty!(autoharvestcheck,:active,game.colock)
-		zoomscale = GtkScale(false, 1:100)
+		scalemaxfac=100
+		zoomscale = GtkScale(false, 1:scalemaxfac)
+		zlabel=GtkLabel("Zoom")
 		zadj=Gtk.Adjustment(zoomscale)
 		setproperty!(zadj,:value,game.board.sizemod)
+		omax=scalemaxfac*3
+		xoscale = GtkScale(false, -omax:omax)
+		xlabel=GtkLabel("Pan x")
+		xadj=Gtk.Adjustment(xoscale)
+		setproperty!(xadj,:value,game.board.offsetx)
+		yoscale = GtkScale(false, -omax:omax)
+		ylabel=GtkLabel("Pan y")
+		yadj=Gtk.Adjustment(yoscale)
+		setproperty!(yadj,:value,game.board.offsety)
 		g=GtkGrid()
 		g[1,1]=harvestbtn
 		g[1,2]=label
-		g[1,3]=passbtn
+		g[2,3]=passbtn
 		g[1,4]=autoharvestcheck
-		g[1,5]=zoomscale
-		g[1,6]=colockcheck
+		g[1,5]=colockcheck
+		g[1,6]=zlabel
+		g[1,7]=xlabel
+		g[1,8]=ylabel
+		g[2,6]=zoomscale
+		g[2,7]=xoscale
+		g[2,8]=yoscale
 		push!(box,game.board.c)	
 		push!(box,g)
 		game.g=g
@@ -145,6 +162,12 @@ function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=[(
 		end
 		id = signal_connect(zoomscale, "value-changed") do widget
 			game.board.sizemod=Gtk.G_.value(widget)
+		end
+		id = signal_connect(xoscale, "value-changed") do widget
+			game.board.offsetx=Gtk.G_.value(widget)
+		end
+		id = signal_connect(yoscale, "value-changed") do widget
+			game.board.offsety=Gtk.G_.value(widget)
 		end
 		id = signal_connect(autoharvestcheck, "clicked") do widget
 			game.autoharvest=getproperty(widget,:active,Bool)
