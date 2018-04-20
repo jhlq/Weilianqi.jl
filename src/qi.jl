@@ -109,7 +109,7 @@ function newgame(boardparams=[],unitparams=[(1,0,0),3,[2],"standard"],map=Dict()
 	for loc in board.grid
 		map[loc]=0
 	end
-	game=Game(map,unitparams,color,colors,colind,colmax, colock,delete,sequence,board,printscore,points,season,win,window,0)
+	game=Game(map,unitparams,color,colors,colind,colmax, colock,delete,sequence,board,printscore,points,season,win,window,0,0)
 	placeseq(game.sequence,game.map)
 	if points==[0,0,0,0,0]
 		allunitsharvest!(game)
@@ -125,6 +125,7 @@ function newgame(boardparams=[],unitparams=[(1,0,0),3,[2],"standard"],map=Dict()
 		g[1,3]=passbtn
 		push!(box,game.board.c)	
 		push!(box,g)
+		game.g=g
 		setproperty!(box,:expand,game.board.c,true)
 		game.win=GtkWindow(box,"Weilianqi",window[1],window[2])
 		showall(game.win)
@@ -236,11 +237,11 @@ function pass(game)
 end
 function save(game)
 	io=open(homedir()*"/.weilianqi/saves.txt","a+")
-	write(io,string(game.sequence))
+	write(io,string(game.sequence),"\n\n")
 	close(io)
 end
 #savelite=(game)->write("~/.weilianqi/$(round(Integer,time())).txt","$(game.sequence)")
-function loadsequence(game::Game,seqstr::String,originoffset=(0,0,0))
+function loadsequence!(game::Game,seqstr::String,originoffset=(0,0,0))
 	seq=eval(parse(seqstr))
 	for entry in seq
 		if entry==:harvest

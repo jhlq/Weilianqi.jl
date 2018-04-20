@@ -41,4 +41,5 @@ type Game
 	win #GtkWindow
 	window #initial aspect ratio
 	lifemap
+	g #GtkGrid
 end

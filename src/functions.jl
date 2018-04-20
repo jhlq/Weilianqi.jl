@@ -288,20 +288,20 @@ function getpoints!(game,unit,loc,distance)
 	ncol=numcolors(l)
 	points=[0.0,0,0,0,0]
 	if ncol==3
-		points[5]=min(min(l...),lif,1)
+		points[5]=min(min(l...),lif)
 		l.-=points[5]
 		lif-=points[5]
 	end
-	if ncol==1
+	if ncol==1 && game.map[loc]==0
 		ci=l[1]==0?(l[2]==0?3:2):1
-		points[1]=min(l[ci],lif,1)
+		points[1]=min(l[ci],lif)
 		game.lifemap[loc][ci]-=points[1]
 		lif-=points[1]
 	else
 		lifc=lif.*unit.color
 		for c in 1:3
 			if lifc[c]>0
-				points[c+1]+=min(lifc[c],l[c%3+1],1)
+				points[c+1]+=min(lifc[c],l[c%3+1])
 				game.lifemap[loc][c%3+1]-=points[c+1]
 			end
 		end
