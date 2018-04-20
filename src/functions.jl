@@ -269,6 +269,59 @@ function spreadlife!(game,unit,lifemap)
 	end
 	return lifemap
 end
+function spreadlife(game,unit)
+	lifemap=Dict()
+	for loc in game.board.grid
+		lifemap[loc]=[0.0,0,0]
+	end
+	return spreadlife!(game,unit,lifemap)
+end
+function unitslive(game,color)
+	lifemap=Dict()
+	for loc in game.board.grid
+		lifemap[loc]=[0.0,0,0]
+	end
+	for (loc,unit) in game.map
+		if isa(unit,Unit) && (unit.color==color || unit.color==(1,1,1))
+			unit.live!(game,unit,lifemap)
+		end
+	end
+	game.lifemap=lifemap
+	return lifemap
+end
+function lifluence(game,unit)
+	lifemap=unitslive(game,unit.color)
+	connectedunits=[unit]
+	cwhite=Unit[]
+	group=[unit.loc]
+	temp=[unit.loc]
+	while !isempty(temp)
+		temp2=Tuple[]
+		for t in temp
+			for h in adjacent(t)
+				if !in(h,group) && !in(h,temp) && !in(h,temp2) && in(h,game.board.grid) && sum(lifemap[h])>0
+					push!(temp2,h)
+					u=game.map[h]
+					if isa(u,Unit) 
+						if u.color==unit.color 
+							push!(connectedunits,u)
+						elseif u.color==(1,1,1)
+							push!(cwhite,u)
+						end
+					end
+				end
+			end
+		end
+		for t2 in temp2
+			push!(group,t2)
+		end
+		temp=temp2
+	end
+	return (group,connectedunits,cwhite)
+end
+function supplylines(game,unit)
+	(lif,cu,cw)=lifluence(game,unit)
+end
 function allunitslive!(game)
 	lifemap=Dict()
 	for loc in game.board.grid

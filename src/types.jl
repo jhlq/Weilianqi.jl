@@ -25,6 +25,7 @@ type Board
 	gridcolor
 end
 type Game
+	name::String
 	map
 	unitparams #to be placed
 	color 

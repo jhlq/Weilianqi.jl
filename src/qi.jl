@@ -59,7 +59,7 @@ end
 function newunit(color=(1,0,0),ir=3,pl=[2])
 	return Unit(color,ir,pl)
 end
-function newboard(shells=6,initlocs=[(0,0,2)],grid=0,c=@GtkCanvas(),sizemod=5,size=30,offsetx=0,offsety=0,bgcolor=(0,0,0),gridcolor=(1/2,1/2,1/2))
+function newboard(shells=9,initlocs=[(0,0,2)],grid=0,c=@GtkCanvas(),sizemod=5,size=30,offsetx=0,offsety=0,bgcolor=(0,0,0),gridcolor=(1/2,1/2,1/2))
 	if grid==0
 		grid=makegrid(shells,initlocs)
 	end
@@ -102,14 +102,14 @@ function pointslabel(game)
 	points=round.(game.points,3)
 	return "Points!\nBlack:\t$(points[1]) \nRed:\t$(points[2]) \nGreen:\t$(points[3]) \nBlue:\t$(points[4]) \nWhite: $(points[5]) \nSeason: $(game.season) "
 end
-function newgame(boardparams=[],unitparams=[(1,0,0),3,[2],"standard"],map=Dict(),unit=0,color=(1,0,0),colors=[(1,0,0),(0,1,0),(0,0,1),(1,1,1)],colind=1,colmax=3,colock=false,delete=false,sequence=[((0,0,2),newunit((1,1,1),(0,0,2),units["white"]))],board=0,printscore=false,points=[0.0,0,0,0,0],season=0,win=0,window=(900,700))
+function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=[(1,0,0),3,[2],"standard"],map=Dict(),unit=0,color=(1,0,0),colors=[(1,0,0),(0,1,0),(0,0,1),(1,1,1)],colind=1,colmax=3,colock=false,delete=false,sequence=[((0,0,2),newunit((1,1,1),(0,0,2),units["white"]))],board=0,printscore=false,points=[0.0,0,0,0,0],season=0,win=0,window=(900,700))
 	if board==0
 		board=newboard(boardparams...)
 	end
 	for loc in board.grid
 		map[loc]=0
 	end
-	game=Game(map,unitparams,color,colors,colind,colmax, colock,delete,sequence,board,printscore,points,season,win,window,0,0)
+	game=Game(name,map,unitparams,color,colors,colind,colmax, colock,delete,sequence,board,printscore,points,season,win,window,0,0)
 	placeseq(game.sequence,game.map)
 	if points==[0,0,0,0,0]
 		allunitsharvest!(game)
@@ -120,6 +120,7 @@ function newgame(boardparams=[],unitparams=[(1,0,0),3,[2],"standard"],map=Dict()
 		label=GtkLabel(pointslabel(game))
 		passbtn=GtkButton("Pass")
 		g=GtkGrid()
+		gg=Dict()
 		g[1,1]=harvestbtn
 		g[1,2]=label
 		g[1,3]=passbtn
@@ -236,8 +237,12 @@ function pass(game)
 	drawboard(game)
 end
 function save(game)
-	io=open(homedir()*"/.weilianqi/saves.txt","a+")
-	write(io,string(game.sequence),"\n\n")
+	dir=homedir()*"/.weilianqi/saves/"*game.name
+	if !ispath(dir)
+		touch(dir)
+	end
+	io=open(dir,"a+")
+	write(io,string(game.sequence),"\n")
 	close(io)
 end
 #savelite=(game)->write("~/.weilianqi/$(round(Integer,time())).txt","$(game.sequence)")
@@ -253,10 +258,15 @@ function loadsequence!(game::Game,seqstr::String,originoffset=(0,0,0))
 			push!(game.sequence,(loco,unit))
 		end
 	end
-	drawboard(game)
+	GAccessor.text(game.g[1,2],pointslabel(game))
+	#drawboard(game)
 	return true
 end
-#function loadseq(filename,originoffset=(0,0,0))
-#	push!(storage[:sequence],eval(parse(read("saves/"*filename,String))))
-#	placeseq()
-#end
+function load(name::String,backtrack::Integer=0)
+	game=newgame()
+	path=homedir()*"/.weilianqi/saves/"*name
+	lines=readlines(path)
+	seqstr=lines[end-backtrack]
+	loadsequence!(game,seqstr)
+	return game
+end
