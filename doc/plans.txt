@@ -67,3 +67,4 @@ influencegroup, check if connected to white
 store records and saves in .weilianqi
 units to implement their own costfunction
 let units cost their color or black+white?
+autoharvest if not enough points

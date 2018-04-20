@@ -234,4 +234,18 @@ function pass(game)
 	game.color=game.colors[game.colind]
 	drawboard(game)
 end
-
+function save(game)
+	io=open(homedir()*"/.weilianqi/saves.txt","a+")
+	write(io,string(game.sequence))
+	close(io)
+end
+savelite=(game)->write("~/.weilianqi/$(round(Integer,time())).txt","$(game.sequence)")
+function placeseq(seq,map,originoffset=(0,0,0))
+	for (loc,unit) in seq
+		map[loc.+originoffset]=unit
+	end
+end
+function loadseq(filename,originoffset=(0,0,0))
+	push!(storage[:sequence],eval(parse(read("saves/"*filename,String))))
+	placeseq()
+end
