@@ -48,7 +48,7 @@ function newunit(color,loc,unitspec::Dict)
 	pl=haskey(unitspec,:pl)?unitspec[:pl]:[2]
 	passover=haskey(unitspec,:passover)?unitspec[:passover]:false
 	passoverself=haskey(unitspec,:passoverself)?unitspec[:passoverself]:true
-	inclusive=haskey(unitspec,:inclusive)?unitspec[:inclusive]:true
+	inclusive=haskey(unitspec,:inclusive)?unitspec[:inclusive]:false
 	groundlevel=haskey(unitspec,:groundlevel)?unitspec[:groundlevel]:true
 	live=haskey(unitspec,:live!)?unitspec[:live!]:spreadlife!
 	baselife=haskey(unitspec,:baselife)?unitspec[:baselife]:6
@@ -56,9 +56,9 @@ function newunit(color,loc,unitspec::Dict)
 	name=haskey(unitspec,:name)?unitspec[:name]:""
 	return Unit(color,ir,pl,passover,passoverself,inclusive,loc,groundlevel,live,baselife,harvest,name)
 end
-function newunit(color=(1,0,0),ir=3,pl=[2])
-	return Unit(color,ir,pl)
-end
+#function newunit(color=(1,0,0),ir=3,pl=[2])
+#	return Unit(color,ir,pl)
+#end
 function newboard(shells=9,initlocs=[(0,0,2)],grid=0,c=@GtkCanvas(),sizemod=5,size=30,offsetx=0,offsety=0,bgcolor=(0,0,0),gridcolor=(1/2,1/2,1/2))
 	if grid==0
 		grid=makegrid(shells,initlocs)
@@ -102,18 +102,15 @@ function pointslabel(game)
 	points=round.(game.points,3)
 	return "Points!\nBlack:\t$(points[1]) \nRed:\t$(points[2]) \nGreen:\t$(points[3]) \nBlue:\t$(points[4]) \nWhite: $(points[5]) \nSeason: $(game.season) "
 end
-function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=[(1,0,0),3,[2],"standard"],map=Dict(),unit=0,color=(1,0,0),colors=[(1,0,0),(0,1,0),(0,0,1),(1,1,1)],colind=1,colmax=3,colock=false,delete=false,sequence=[((0,0,2),newunit((1,1,1),(0,0,2),units["white"]))],board=0,printscore=false,points=[0.0,0,0,0,0],season=0,win=0,window=(900,700))
+function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=[(1,0,0),3,[2],"standard"],map=Dict(),unit=0,color=(1,0,0),colors=[(1,0,0),(0,1,0),(0,0,1),(1,1,1)],colind=1,colmax=3,colock=false,delete=false,sequence=[((0,0,2),newunit((1,1,1),(0,0,2),units["white"]))],board=0,printscore=false,points=[0.0,0,0,0,0],season=0,win=0,window=(900,700),autoharvest=false)
 	if board==0
 		board=newboard(boardparams...)
 	end
 	for loc in board.grid
 		map[loc]=0
 	end
-	game=Game(name,map,unitparams,color,colors,colind,colmax, colock,delete,sequence,board,printscore,points,season,win,window,0,0)
+	game=Game(name,map,unitparams,color,colors,colind,colmax, colock,delete,sequence,board,printscore,points,season,win,window,0,0,autoharvest)
 	placeseq(game.sequence,game.map)
-	if points==[0,0,0,0,0]
-		allunitsharvest!(game)
-	end
 	if win==0
 		box=GtkBox(:h)
 		harvestbtn=GtkButton("Harvest")
@@ -132,11 +129,14 @@ function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=[(
 		showall(game.win)
 		id = signal_connect(harvestbtn, "clicked") do widget
 			allunitsharvest!(game)
-			GAccessor.text(label,pointslabel(game))
+			#GAccessor.text(label,pointslabel(game))
 		end
 		id = signal_connect(passbtn, "clicked") do widget
 			pass(game)
 		end
+	end
+	if points==[0,0,0,0,0]
+		allunitsharvest!(game)
 	end
 	@guarded function drawsignal(widget)
 		ctx=getgc(widget)
@@ -170,8 +170,14 @@ function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=[(
 					cost=unitcost(game,hex,game.unitparams)
 					afforded=subtractcost(game,cost,game.unitparams[1])
 					if !afforded
-						println("Not enough points.")
-						return
+						if game.autoharvest
+							allunitsharvest!(game)
+							afforded=subtractcost(game,cost,game.unitparams[1])
+						end
+						if !afforded
+							println("Not enough points.")
+							return
+						end
 					end
 					#nu=newunit(game.unitparams...)
 					nu=newunit(game.color,hex,units[game.unitparams[4]])
@@ -258,7 +264,7 @@ function loadsequence!(game::Game,seqstr::String,originoffset=(0,0,0))
 			push!(game.sequence,(loco,unit))
 		end
 	end
-	GAccessor.text(game.g[1,2],pointslabel(game))
+	#GAccessor.text(game.g[1,2],pointslabel(game))
 	#drawboard(game)
 	return true
 end

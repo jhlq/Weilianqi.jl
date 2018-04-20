@@ -43,4 +43,5 @@ type Game
 	window #initial aspect ratio
 	lifemap
 	g #GtkGrid
+	autoharvest::Bool
 end

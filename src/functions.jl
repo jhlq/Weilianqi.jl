@@ -319,8 +319,17 @@ function lifluence(game,unit)
 	end
 	return (group,connectedunits,cwhite)
 end
+function findpaths(game,l1,l2,lifmap)
+	
+end
 function supplylines(game,unit)
+	sl=[]
 	(lif,cu,cw)=lifluence(game,unit)
+	for w in cw
+		checked=[w.loc]
+		
+	end
+	return sl
 end
 function allunitslive!(game)
 	lifemap=Dict()
@@ -414,6 +423,7 @@ function allunitsharvest!(game)
 	#game.points.+=points
 	game.season+=1
 	push!(game.sequence,:harvest)
+	GAccessor.text(game.g[1,2],pointslabel(game))
 	return points
 end
 
