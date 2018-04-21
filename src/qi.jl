@@ -44,7 +44,7 @@ function drawboard(game::Game)
 end
 
 function newunit(color,loc,unitspec::Dict)
-	ir=haskey(unitspec,:ir)?unitspec[:ir]:3
+	ir=haskey(unitspec,:ir)?unitspec[:ir]:2
 	pl=haskey(unitspec,:pl)?unitspec[:pl]:[2]
 	passover=haskey(unitspec,:passover)?unitspec[:passover]:false
 	passoverself=haskey(unitspec,:passoverself)?unitspec[:passoverself]:true
@@ -102,7 +102,7 @@ function pointslabel(game)
 	points=round.(game.points,3)
 	return "Points!\nBlack:\t$(points[1]) \nRed:\t$(points[2]) \nGreen:\t$(points[3]) \nBlue:\t$(points[4]) \nWhite: $(points[5]) \nSeason: $(game.season) "
 end
-function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=[(1,0,0),3,[2],"standard"],map=Dict(),unit=0,color=(1,0,0),colors=[(1,0,0),(0,1,0),(0,0,1),(1,1,1)],colind=1,colmax=3,colock=false,delete=false,sequence=[((0,0,2),newunit((1,1,1),(0,0,2),units["white"]))],board=0,printscore=false,points=[0.0,0,0,0,0],season=0,win=0,window=(900,700),autoharvest=false)
+function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=[(1,0,0),3,[2],"standard"],map=Dict(),unit=0,color=(1,0,0),colors=[(1,0,0),(0,1,0),(0,0,1),(1,1,1)],colind=1,colmax=3,colock=false,delete=false,sequence=[((0,0,2),newunit((1,1,1),(0,0,2),units["white"]))],board=0,printscore=false,points=[0.0,0,0,0,0],season=0,win=0,window=(900,700),autoharvest=true)
 	if board==0
 		board=newboard(boardparams...)
 	end
@@ -284,7 +284,7 @@ function pass(game)
 	drawboard(game)
 end
 function save(game)
-	dir=homedir()*"/.weilianqi/saves/"*game.name
+	dir=joinpath(homedir(),"weilianqi","saves",game.name)
 	if !ispath(dir)
 		touch(dir)
 	end
@@ -311,7 +311,7 @@ function loadsequence!(game::Game,seqstr::String,originoffset=(0,0,0))
 end
 function load(name::String,backtrack::Integer=0)
 	game=newgame()
-	path=homedir()*"/.weilianqi/saves/"*name
+	path=joinpath(homedir(),"weilianqi","saves",name)
 	lines=readlines(path)
 	seqstr=lines[end-backtrack]
 	loadsequence!(game,seqstr)

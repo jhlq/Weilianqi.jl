@@ -12,4 +12,4 @@ function white_harvest!(game,unit)
 	game.points.+=p
 	return p
 end
-units["white"]=Dict(:harvest! => white_harvest!,:name => "white",:inclusive=>true,:passover=>true)
+units["white"]=Dict(:harvest! => white_harvest!,:name => "white",:inclusive=>true,:passover=>true,:baselife=>18)

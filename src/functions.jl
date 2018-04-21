@@ -11,10 +11,13 @@ function loadseq(filename,originoffset=(0,0,0))
 	placeseq()
 end
 
-function makegrid(layers=3,startlocs=[(0,0,2)])
+function makegrid(layers=3,startlocs=[(0,0,2)],groundlevel=false)
 	grid=Set{Tuple}()
 	push!(grid,startlocs...)
 	connections=[(1,0,0),(-1,0,0),(0,1,0),(0,-1,0),(1,-1,0),(-1,1,0), (0,0,1),(1,0,1),(0,1,1),(0,0,-1),(1,0,-1),(1,-1,-1)]
+	if groundlevel
+		connections=[(1,0,0),(-1,0,0),(0,1,0),(0,-1,0),(1,-1,0),(-1,1,0)]
+	end
 	for layer in 1:layers
 		tgrid=Array{Tuple,1}()
 		for loc in grid
@@ -58,6 +61,17 @@ function adjacent(hex,spacing=1,layer=false)
 	end
 	return adj
 end
+function adjacent(game,unit::Unit)
+	hadj=adjacent(unit.loc)
+	adj=Unit[]
+	for h in hadj
+		u=game.map[h]
+		if isa(u,Unit)
+			push!(adj,u)
+		end
+	end
+	return adj 
+end
 function placewhite(spacing::Integer,ori=(0,0,2))
 	white=length(storage[:players])
 	if !haskey(storage[:map],ori) || storage[:map][ori]==white
@@ -81,16 +95,14 @@ function initgame(startlocs=[(0,0,2)])
 end
 
 function resetmap(game)
-	for loc in game.board.grid
+	for loc in game.board.grid #keys(game.map)? No, offgrid locations are safe
 		game.map[loc]=0
 	end
 	drawboard(game)
 	reveal(game.board.c)
 end
 
-
-
-function getgroup(game,hex)
+function getgroup_dep(game,hex)
 	player=game.map[hex]
 	white=(1,1,1)
 	if player==0
@@ -104,6 +116,39 @@ function getgroup(game,hex)
 			for h in adjacent(t)
 				if !in(h,group) && !in(h,temp) && !in(h,temp2) && in(h,keys(game.map)) && (game.map[h]==player || game.map[h]==white)
 					push!(temp2,h)
+				end
+			end
+		end
+		for t2 in temp2
+			push!(group,t2)
+		end
+		temp=temp2
+	end
+	return group
+end
+function getgroup(game,unit::Unit)
+	white=(1,1,1)
+	group=[unit]
+	if unit.color==white 
+		adju=adjacent(game,unit)
+		for u in adju
+			g=getgroup(game,u) #can this be optimized when there are several white units?
+			for gu in g
+				if !in(gu,group)
+					push!(group,gu)
+				end
+			end
+		end
+		return group
+	end
+	temp=[unit]
+	while !isempty(temp)
+		temp2=Unit[]
+		for t in temp
+			for h in adjacent(t.loc)
+				tu=game.map[h]
+				if !in(tu,group) && !in(tu,temp) && !in(tu,temp2) && isa(tu,Unit) && (tu.color==unit.color || tu.color==white)
+					push!(temp2,tu)
 				end
 			end
 		end
@@ -279,33 +324,99 @@ end
 function unitslive(game,color)
 	lifemap=Dict()
 	for loc in game.board.grid
-		lifemap[loc]=[0.0,0,0]
+		lifemap[loc]=[0.0,0,0]	#this is sometimes redundant and sometimes needed...
 	end
 	for (loc,unit) in game.map
-		if isa(unit,Unit) && (unit.color==color || unit.color==(1,1,1))
+		if isa(unit,Unit) && (color==(1,1,1) || unit.color==color || unit.color==(1,1,1))
 			unit.live!(game,unit,lifemap)
 		end
 	end
-	game.lifemap=lifemap
 	return lifemap
 end
-function lifluence(game,unit)
+#=
+	if color==(1,1,1) 
+		lms=Dict[]
+		for ci in 1:game.colmax
+			c=game.colors[ci]
+			if c==(1,1,1)
+				return lifemap
+			end
+			lm=unitslive(game,c)
+			for (loc,lif) in lm
+				lifemap[loc]+=lif
+			end
+		end
+	end
+=#
+#=
+if unit.color==white 
+		adju=adjacent(game,unit)
+		for u in adju
+			g=getgroup(game,u) #can this be optimized when there are several white units?
+			for gu in g
+				if !in(gu,group)
+					push!(group,gu)
+				end
+			end
+		end
+		return group
+	end
+=#
+function irlocs(unit::Unit)
+	return makegrid(unit.ir,[unit.loc],unit.groundlevel)
+end
+function lifluence(game,unit::Unit)
 	lifemap=unitslive(game,unit.color)
-	connectedunits=[unit]
+	connectedunits=Unit[unit]
 	cwhite=Unit[]
 	group=[unit.loc]
+	if unit.color==(1,1,1)
+		push!(cwhite,unit)
+		stuff=Dict()
+		#stuff[:loced]=[unit.loc]
+		reach=makegrid(7)
+		for loc in reach
+			u=game.map[loc]
+			if isa(u,Unit) && u.color!=(1,1,1) && !haskey(stuff,u.color)	#!in(loc,stuff[:loced])
+				lmu=lifluence(game,u)
+				if in(unit,lmu[3])
+					stuff[u.color]=lmu
+				end
+			end
+		end
+		for (col,lm) in stuff
+			for l in lm[1]
+				if !in(l,group)
+					push!(group,l)
+				end
+			end
+			for cu in lm[2]
+				if !in(cu,connectedunits)
+					push!(connectedunits,cu)
+				end
+			end
+			for cw in lm[3]
+				if !in(cw,cwhite)
+					push!(cwhite,cw)
+				end
+			end
+		end
+		return (group,connectedunits,cwhite)
+	end
 	temp=[unit.loc]
 	while !isempty(temp)
 		temp2=Tuple[]
 		for t in temp
 			for h in adjacent(t)
+#				lmt=lifemap[t]
+#				lmh=lifemap[h]
+#				canspread=true
 				if !in(h,group) && !in(h,temp) && !in(h,temp2) && in(h,game.board.grid) && sum(lifemap[h])>0
 					push!(temp2,h)
 					u=game.map[h]
 					if isa(u,Unit) 
-						if u.color==unit.color 
-							push!(connectedunits,u)
-						elseif u.color==(1,1,1)
+						push!(connectedunits,u)
+						if u.color==(1,1,1)
 							push!(cwhite,u)
 						end
 					end
@@ -319,17 +430,10 @@ function lifluence(game,unit)
 	end
 	return (group,connectedunits,cwhite)
 end
-function findpaths(game,l1,l2,lifmap)
-	
-end
-function supplylines(game,unit)
-	sl=[]
+function connectedunits(game,unit)
 	(lif,cu,cw)=lifluence(game,unit)
-	for w in cw
-		checked=[w.loc]
-		
-	end
-	return sl
+	cellconnected=getgroup(game,unit)
+	return (cw,cellconnected,cu) #connected white units, connected by cells, connected by lifluence
 end
 function allunitslive!(game)
 	lifemap=Dict()
@@ -427,12 +531,12 @@ function allunitsharvest!(game)
 	return points
 end
 
-function undo() #wont undo captures?
-	hex=pop!(storage[:sequence])
-	storage[:map][hex[1]]=0
-	storage[:player]=storage[:player]-1
-	if storage[:player]<1
-		storage[:player]=storage[:np]
+function undo!(game) #wont undo captures? Maybe when reloading sequence
+	hex=pop!(game.sequence)
+	game.map[hex[1]]=0
+	game.colind-=1
+	if game.colind<1
+		game.colind=game.colmax
 	end
 	return hex
 end
