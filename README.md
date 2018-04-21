@@ -2,6 +2,8 @@
 
 Welcome to a fun and beneficial game that trains the mind and teamwork skills!
 
+Weilianqi is played on a triangular grid like that formed by the flower of life.
+
 Wei-lian-qi is chinese for surround-connect-game. To play it first start julia (0.6) then type:
 ```
 Pkg.add("Gtk") #unless already installed
