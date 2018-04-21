@@ -43,7 +43,7 @@ function drawboard(game::Game)
 	drawboard(game,ctx,w,h)
 end
 
-function newunit(color,loc,unitspec::Dict)
+function newunit(color=(1,0,0),loc=(0,0,Inf),unitspec::Dict=Dict())
 	ir=haskey(unitspec,:ir)?unitspec[:ir]:2
 	pl=haskey(unitspec,:pl)?unitspec[:pl]:[2]
 	passover=haskey(unitspec,:passover)?unitspec[:passover]:false
@@ -120,7 +120,7 @@ function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=[(
 		autoharvestcheck = GtkCheckButton("Autoharvest")
 		setproperty!(autoharvestcheck,:active,game.autoharvest)
 		colockcheck = GtkCheckButton("Lock color")
-		setproperty!(autoharvestcheck,:active,game.colock)
+		setproperty!(colockcheck,:active,game.colock)
 		scalemaxfac=100
 		zoomscale = GtkScale(false, 1:scalemaxfac)
 		zlabel=GtkLabel("Zoom")

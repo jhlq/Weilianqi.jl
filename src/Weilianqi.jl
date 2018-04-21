@@ -4,4 +4,9 @@ using Gtk, Graphics
 
 include("qi.jl")
 
+dir=joinpath(homedir(),"weilianqi","saves")
+if !ispath(dir)
+	mkpath(dir)
+end
+
 end # module
