@@ -15,4 +15,6 @@ game=newgame();
 
 Click the harvest button when the points are depleted or you feel like collecting more points. 
 
-What is the main objective? There are many! One is to figure out how the scoring system works!
+Type center(game,(x,y)) in console to center the board on a location.
+
+What is the main objective? There are many! One is to figure out how the scoring system works! Another to create pretty formations. A most important goal is to have fun!

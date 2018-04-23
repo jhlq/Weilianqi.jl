@@ -729,4 +729,10 @@ function loadsequence!(game::Game,seqstr::String,originoffset=(0,0,0))
 	#drawboard(game)
 	return true
 end
-
+function center(game,hex)
+	loc=hex_to_pixel(hex[1],hex[2],game.board.size)
+	game.board.offsetx=-loc[1]
+	game.board.offsety=-loc[2]
+	drawboard(game)
+	return true
+end

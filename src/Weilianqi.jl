@@ -1,5 +1,5 @@
 module Weilianqi
-export newgame, printpoints, allunitsharvest!, save, loadgame, loadsequence!, expandboard!, checkharvest
+export newgame, printpoints, allunitsharvest!, save, loadgame, loadsequence!, expandboard!, checkharvest, center
 using Gtk, Graphics
 
 dir=joinpath(homedir(),"weilianqi","saves")
