@@ -1,6 +1,6 @@
 include("types.jl")
 
-saveseq=(game)->write("saves/$(round(Integer,time())).txt","$(game.sequence)")
+#saveseq=(game)->write("saves/$(round(Integer,time())).txt","$(game.sequence)")
 function placeseq(seq,map,originoffset=(0,0,0))
 	for (loc,unit) in seq
 		map[loc.+originoffset]=unit
@@ -61,17 +61,7 @@ function adjacent(hex,spacing=1,layer=false)
 	end
 	return adj
 end
-function adjacent(game,unit::Unit)
-	hadj=adjacent(unit.loc)
-	adj=Unit[]
-	for h in hadj
-		u=game.map[h]
-		if isa(u,Unit)
-			push!(adj,u)
-		end
-	end
-	return adj 
-end
+
 function placewhite(spacing::Integer,ori=(0,0,2))
 	white=length(storage[:players])
 	if !haskey(storage[:map],ori) || storage[:map][ori]==white
@@ -94,71 +84,6 @@ function initgame(startlocs=[(0,0,2)])
 	placewhite(storage[:spacing]) 
 end
 
-function resetmap(game)
-	for loc in game.board.grid #keys(game.map)? No, offgrid locations are safe
-		game.map[loc]=0
-	end
-	drawboard(game)
-	reveal(game.board.c)
-end
-
-function getgroup_dep(game,hex)
-	player=game.map[hex]
-	white=(1,1,1)
-	if player==0
-		return []
-	end
-	group=Tuple[hex]
-	temp=[hex]
-	while !isempty(temp)
-		temp2=Tuple[]
-		for t in temp
-			for h in adjacent(t)
-				if !in(h,group) && !in(h,temp) && !in(h,temp2) && in(h,keys(game.map)) && (game.map[h]==player || game.map[h]==white)
-					push!(temp2,h)
-				end
-			end
-		end
-		for t2 in temp2
-			push!(group,t2)
-		end
-		temp=temp2
-	end
-	return group
-end
-function getgroup(game,unit::Unit)
-	white=(1,1,1)
-	group=[unit]
-	if unit.color==white 
-		adju=adjacent(game,unit)
-		for u in adju
-			g=getgroup(game,u) #can this be optimized when there are several white units?
-			for gu in g
-				if !in(gu,group)
-					push!(group,gu)
-				end
-			end
-		end
-		return group
-	end
-	temp=[unit]
-	while !isempty(temp)
-		temp2=Unit[]
-		for t in temp
-			for h in adjacent(t.loc)
-				tu=game.map[h]
-				if !in(tu,group) && !in(tu,temp) && !in(tu,temp2) && isa(tu,Unit) && (tu.color==unit.color || tu.color==white)
-					push!(temp2,tu)
-				end
-			end
-		end
-		for t2 in temp2
-			push!(group,t2)
-		end
-		temp=temp2
-	end
-	return group
-end
 function liberties(group)
 	if isempty(group)
 		return 1
@@ -177,6 +102,7 @@ function liberties(group)
 	end
 	return libs
 end
+#=
 function connections()
 	nc=0
 	for (loc,col) in storage[:map]
@@ -193,6 +119,7 @@ function connections()
 	end
 	return nc/2
 end
+=#
 function freelocs(layer=2)
 	free=0
 	tot=0
@@ -207,53 +134,6 @@ function freelocs(layer=2)
 	return (free,tot)
 end
 
-function influence(game,hex,groundlevel=false,passover=false,passoverself=true,inclusive=true)
-	unit=game.map[hex]
-	white=(1,1,1)
-	group=Dict(hex=>6.0)
-	temp=Dict(hex=>6.0)
-	for rad in 1:unit.ir
-		temp2=Dict()
-		for t in temp
-			for h in adjacent(t[1],1,groundlevel)
-				if !in(h,keys(group)) && !in(h,keys(temp)) && !in(h,keys(temp2)) && in(h,keys(game.map)) 
-					inf=1/rad
-					if game.map[h]==0 || passover
-						temp2[h]=inf
-					elseif passoverself && (game.map[h].color==unit.color || game.map[h].color==white)
-						temp2[h]=inf
-					end
-					if inclusive && game.map[h]!=0 && !in(h,keys(temp2))
-						group[h]=inf
-					end
-				end
-			end
-		end
-		for (h2,i2) in temp2
-			group[h2]=i2
-		end
-		temp=temp2
-	end
-	return group
-end
-function allinfluence(game,groundlevel=false,bools=(true,false,true,true))
-	influencemap=Dict()
-	for (loc,player) in game.map
-		if !groundlevel || loc[3]==2
-			influencemap[loc]=[0.0,0,0]
-		end
-	end
-	for (loc,unit) in game.map
-		if unit!=0
-			col=unit.color
-			infl=influence(game,loc,bools...)
-			for inf in infl
-				influencemap[inf[1]].+=inf[2].*col
-			end
-		end
-	end
-	return influencemap
-end
 function numcolors(rgb)
 	nc=0
 	for c in rgb
@@ -263,313 +143,11 @@ function numcolors(rgb)
 	end
 	return nc
 end
-function peekharvest(game,groundlevel=false,bools=(true,false,true,true))
-	influencemap=allinfluence(game,groundlevel,bools)
-	brgbw=[0.0,0,0,0,0]
-	for (iloc,inf) in influencemap
-		ninf=numcolors(inf)
-		if ninf==3
-			brgbw[5]+=min(inf...)
-		end
-		if ninf==1
-			brgbw[1]+=min(sum(inf),1)
-		else
-			for c in 1:3
-				brgbw[c+1]+=min(inf[c],inf[c%3+1])
-			end
-		end
-	end
-	for c in 2:4
-		brgbw[c]-=brgbw[5]
-	end
-	return brgbw
-end
-function spreadlife!(game,unit,lifemap)
-	white=(1,1,1)
-	hex=unit.loc
-	lifemap[hex].+=unit.baselife.*unit.color
-	temp=Dict(hex=>unit.baselife)
-	checked=[hex]
-	for rad in 1:unit.ir
-		temp2=Dict()
-		for t in temp
-			for h in adjacent(t[1],1,unit.groundlevel)
-				if !in(h,keys(temp)) && !in(h,keys(temp2)) && !in(h,checked) && in(h,game.board.grid) 
-					lif=(unit.baselife/6/rad).*unit.color
-					if game.map[h]==0 || unit.passover
-						temp2[h]=lif
-					elseif unit.passoverself && (game.map[h].color==unit.color || game.map[h].color==white)
-						temp2[h]=lif
-					elseif unit.inclusive && game.map[h]!=0 #&& !in(h,keys(temp2))
-						lifemap[h].+=lif
-					end
-				end
-				push!(checked,h)
-			end
-		end
-		for (h2,i2) in temp2
-			lifemap[h2].+=i2
-		end
-		temp=temp2
-	end
-	return lifemap
-end
-function spreadlife(game,unit)
-	lifemap=Dict()
-	for loc in game.board.grid
-		lifemap[loc]=[0.0,0,0]
-	end
-	return spreadlife!(game,unit,lifemap)
-end
-function unitslive(game,color)
-	lifemap=Dict()
-	for loc in game.board.grid
-		lifemap[loc]=[0.0,0,0]	#this is sometimes redundant and sometimes needed...
-	end
-	for (loc,unit) in game.map
-		if isa(unit,Unit) && (color==(1,1,1) || unit.color==color || unit.color==(1,1,1))
-			unit.live!(game,unit,lifemap)
-		end
-	end
-	return lifemap
-end
-#=
-	if color==(1,1,1) 
-		lms=Dict[]
-		for ci in 1:game.colmax
-			c=game.colors[ci]
-			if c==(1,1,1)
-				return lifemap
-			end
-			lm=unitslive(game,c)
-			for (loc,lif) in lm
-				lifemap[loc]+=lif
-			end
-		end
-	end
-=#
-#=
-if unit.color==white 
-		adju=adjacent(game,unit)
-		for u in adju
-			g=getgroup(game,u) #can this be optimized when there are several white units?
-			for gu in g
-				if !in(gu,group)
-					push!(group,gu)
-				end
-			end
-		end
-		return group
-	end
-=#
+
 function irlocs(unit::Unit)
 	return makegrid(unit.ir,[unit.loc],unit.groundlevel)
 end
-function lifluence(game,unit::Unit)
-	lifemap=unitslive(game,unit.color)
-	connectedunits=Unit[unit]
-	cwhite=Unit[]
-	group=[unit.loc]
-	if unit.color==(1,1,1)
-		push!(cwhite,unit)
-		stuff=Dict()
-		#stuff[:loced]=[unit.loc]
-		reach=makegrid(7)
-		for loc in reach
-			u=game.map[loc]
-			if isa(u,Unit) && u.color!=(1,1,1) && !haskey(stuff,u.color)	#!in(loc,stuff[:loced])
-				lmu=lifluence(game,u)
-				if in(unit,lmu[3])
-					stuff[u.color]=lmu
-				end
-			end
-		end
-		for (col,lm) in stuff
-			for l in lm[1]
-				if !in(l,group)
-					push!(group,l)
-				end
-			end
-			for cu in lm[2]
-				if !in(cu,connectedunits)
-					push!(connectedunits,cu)
-				end
-			end
-			for cw in lm[3]
-				if !in(cw,cwhite)
-					push!(cwhite,cw)
-				end
-			end
-		end
-		return (group,connectedunits,cwhite)
-	end
-	temp=[unit.loc]
-	while !isempty(temp)
-		temp2=Tuple[]
-		for t in temp
-			for h in adjacent(t)
-#				lmt=lifemap[t]
-#				lmh=lifemap[h]
-#				canspread=true
-				if !in(h,group) && !in(h,temp) && !in(h,temp2) && in(h,game.board.grid) && sum(lifemap[h])>0
-					push!(temp2,h)
-					u=game.map[h]
-					if isa(u,Unit) 
-						push!(connectedunits,u)
-						if u.color==(1,1,1)
-							push!(cwhite,u)
-						end
-					end
-				end
-			end
-		end
-		for t2 in temp2
-			push!(group,t2)
-		end
-		temp=temp2
-	end
-	return (group,connectedunits,cwhite)
-end
-function connectedunits(game,unit)
-	(lif,cu,cw)=lifluence(game,unit)
-	cellconnected=getgroup(game,unit)
-	return (cw,cellconnected,cu) #connected white units, connected by cells, connected by lifluence
-end
-function allunitslive!(game)
-	lifemap=Dict()
-	for loc in game.board.grid
-		lifemap[loc]=[0.0,0,0]
-	end
-	for (loc,unit) in game.map
-		if isa(unit,Unit)
-			unit.live!(game,unit,lifemap)
-		end
-	end
-	game.lifemap=lifemap
-	return lifemap
-end
-function getpoints!(game,unit,loc,distance)
-	l=game.lifemap[loc]
-	lif=distance==0?unit.baselife:(unit.baselife/6/distance)
-	ncol=numcolors(l)
-	points=[0.0,0,0,0,0]
-	if ncol==3
-		points[5]=min(min(l...),lif)
-		l.-=points[5]
-		lif-=points[5]
-	end
-	if ncol==1 && game.map[loc]==0
-		ci=l[1]==0?(l[2]==0?3:2):1
-		points[1]=min(l[ci],lif)
-		game.lifemap[loc][ci]-=points[1]
-		lif-=points[1]
-	else
-		lifc=lif.*unit.color
-		for c in 1:3
-			if lifc[c]>0
-				points[c+1]+=min(lifc[c],l[c%3+1])
-				game.lifemap[loc][c%3+1]-=points[c+1]
-			end
-		end
-	end
-	game.points.+=points
-	#println(points,loc)
-	return points
-end
-function unitharvest!(game,unit)
-	white=(1,1,1)
-	#lifemap[hex]+=unit.baselife.*unit.color
-	getpoints!(game,unit,unit.loc,0)
-	temp=[unit.loc]
-	checked=[unit.loc]
-	points=[0.0,0,0,0,0]
-	for rad in 1:unit.ir
-		temp2=[]
-		for t in temp
-			for h in adjacent(t,1,unit.groundlevel)
-				if !in(h,temp) &&!in(h,checked) && in(h,game.board.grid) 
-#					lif=(unit.baselife/6/rad).*unit.color
-					if game.map[h]==0 || unit.passover
-						points+=getpoints!(game,unit,h,rad)
-						push!(temp2,h)
-					elseif unit.passoverself && (game.map[h].color==unit.color || game.map[h].color==white)
-						points+=getpoints!(game,unit,h,rad)
-						push!(temp2,h)
-					elseif unit.inclusive && game.map[h]!=0
-						points+=getpoints!(game,unit,h,rad)
-					end
-				end
-				push!(checked,h)
-			end
-		end
-#		for (h2,i2) in temp2
-#			lifemap[h2].+=i2
-#		end
-		temp=temp2
-	end
-	return points
-end
-function allunitsharvest!(game)
-	#groundlevel=false
-	#if unit.pl=[2]
-	#	groundlevel=true
-	#end
-	#bools=(unit.passover,unit.passoverself,unit.inclusive)
-	#influencemap=allinfluence(game,unit.groundlevel,bools)
-	allunitslive!(game)
-	points=[0.0,0,0,0,0]
-	for (loc,unit) in game.map
-		if unit!=0
-			points.+=unit.harvest!(game,unit)
-#			println(points)
-		end
-	end
-	#game.points.+=points
-	game.season+=1
-	push!(game.sequence,:harvest)
-	GAccessor.text(game.g[1,2],pointslabel(game))
-	return points
-end
 
-function undo!(game) #wont undo captures? Maybe when reloading sequence
-	hex=pop!(game.sequence)
-	game.map[hex[1]]=0
-	game.colind-=1
-	if game.colind<1
-		game.colind=game.colmax
-	end
-	return hex
-end
-function printpoints(game)
-	harv=round.(peekharvest(game),1,10)
-	println("Black: ",harv[1]," Red: ",harv[2]," Green: ",harv[3]," Blue: ",harv[4]," White: ",harv[5])#," Total: ",sum(harv))
-end
-function nearestwhite(game,hex,layer=false)
-	white=(1,1,1)
-	group=[hex]
-	temp=[hex]
-	for rad in 1:game.board.shells*9
-		temp2=[]
-		for t in temp
-			for h in adjacent(t,1,layer)
-				if in(h,keys(game.map))
-					unit=game.map[h]
-					if unit!=0 && unit.color==white
-						return rad
-					end
-					if !in(h,group) && !in(h,temp) && !in(h,temp2)  
-						push!(temp2,h)
-					end
-				end
-			end
-		end
-		for h2 in temp2
-			push!(group,h2)
-		end
-		temp=temp2
-	end
-	return Inf
-end
 function hex_to_pixel(q,r,size)
     x = size * sqrt(3) * (q + r/2)
     y = size * 3/2 * r

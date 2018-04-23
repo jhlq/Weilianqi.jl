@@ -11,6 +11,17 @@ type Unit
 	baselife::Number
 	harvest!::Function
 	name::String
+	costfun::Function
+	canspawn::Bool
+	harvested::Bool
+end
+type Group
+	spawns
+	units
+	#lifmap
+	points
+	allowdebt::Bool
+	harvested::Bool
 end
 type Board
 	shells::Integer #layers of locations to add to the initial ones
@@ -23,10 +34,13 @@ type Board
 	offsety::Number
 	bgcolor #background
 	gridcolor
+	expandbasecost::Number
 end
 type Game
 	name::String
 	map
+	groups
+	spawns
 	unitparams #to be placed
 	color 
 	colors
@@ -34,7 +48,7 @@ type Game
 	colmax::Integer #return to first color after max
 	colock::Bool #place a single color
 	delete::Bool #delete units
-	sequence::Array{Any} #Tuple{Tuple{Int64,Int64,Int64},Any},1} #placed units and performed harvests
+	sequence::Array{Any} #Tuple{Tuple{Int64,Int64,Int64},Any},1} #placed units and performed harvests/expands
 	board::Board
 	printscore::Bool
 	points

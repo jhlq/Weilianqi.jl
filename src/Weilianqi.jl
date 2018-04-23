@@ -1,12 +1,12 @@
 module Weilianqi
-export newgame,printpoints,harvest,zoom, save, load, loadsequence!
+export newgame, printpoints, allunitsharvest!, save, loadgame, loadsequence!, expandboard!, checkharvest
 using Gtk, Graphics
-
-include("qi.jl")
 
 dir=joinpath(homedir(),"weilianqi","saves")
 if !ispath(dir)
 	mkpath(dir)
 end
+
+include("qi.jl")
 
 end # module
