@@ -52,14 +52,14 @@ function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=[(
 	for loc in board.grid
 		map[loc]=0
 	end
-	game=Game(name,map,Group[],Unit[],unitparams,color,colors,colind,colmax, colock,delete,sequence,board,printscore,points,season,win,window,0,0,autoharvest)
+	game=Game(name,map,Group[],Unit[],unitparams,color,colors,colind,colmax, colock,delete,sequence,board,printscore,points,season,win,window,0,0,Dict(),autoharvest)
 	#placeseq(game.sequence,game.map)
 	placeseq!(game)
 	updategroups!(game)
 	if win==0
 		box=GtkBox(:h)
 		harvestbtn=GtkButton("Harvest")
-		label=GtkLabel(pointslabel(game))
+		scorelabel=GtkLabel(pointslabel(game))
 		passbtn=GtkButton("Next color (overrides colorlock)")
 		#colabel=GtkLabel(string(game.color))
 		autoharvestcheck = GtkCheckButton("Autoharvest")
@@ -71,7 +71,7 @@ function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=[(
 		zlabel=GtkLabel("Zoom")
 		zadj=Gtk.Adjustment(zoomscale)
 		setproperty!(zadj,:value,game.board.sizemod)
-		omax=scalemaxfac*3
+		omax=scalemaxfac*30
 		xoscale = GtkScale(false, -omax:omax)
 		xlabel=GtkLabel("Pan x")
 		xadj=Gtk.Adjustment(xoscale)
@@ -80,9 +80,22 @@ function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=[(
 		ylabel=GtkLabel("Pan y")
 		yadj=Gtk.Adjustment(yoscale)
 		setproperty!(yadj,:value,game.board.offsety)
+		spexpx=GtkSpinButton(-1000:1000)
+		Gtk.G_.value(spexpx,game.board.shells)
+		spexpy=GtkSpinButton(-1000:1000)
+		Gtk.G_.value(spexpy,game.board.shells)
+		spexpshell=GtkSpinButton(0:1000)
+		Gtk.G_.value(spexpshell,game.board.shells)
+		xexplabel=GtkLabel("X loc")
+		yexplabel=GtkLabel("Y loc")
+		shellexplabel=GtkLabel("Radius")
+		expbtn=GtkButton("Expand board at (X,Y)")
+		centerbtn=GtkButton("Center board on (X,Y)")
+		deletecheck=GtkCheckButton("Delete")
+		setproperty!(deletecheck,:active,game.delete)
 		g=GtkGrid()
 		g[1,1]=harvestbtn
-		g[1,2]=label
+		g[1,2]=scorelabel
 		g[2,3]=passbtn
 		g[1,4]=autoharvestcheck
 		g[1,5]=colockcheck
@@ -92,11 +105,22 @@ function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=[(
 		g[2,6]=zoomscale
 		g[2,7]=xoscale
 		g[2,8]=yoscale
+		g[1,9]=xexplabel
+		g[1,10]=yexplabel
+		g[2,9]=spexpx
+		g[2,10]=spexpy
+		g[1,11]=shellexplabel
+		g[2,11]=spexpshell
+		g[2,12]=expbtn
+		g[2,13]=centerbtn
+		g[1,14]=deletecheck
 		push!(box,game.board.c)	
 		push!(box,g)
 		game.g=g
+		game.gui[:harvestbtn]=harvestbtn
+		game.gui[:scorelabel]=scorelabel
 		setproperty!(box,:expand,game.board.c,true)
-		game.win=GtkWindow(box,"Weilianqi",window[1],window[2])
+		game.win=GtkWindow(box,"Weilianqi $name",window[1],window[2])
 		showall(game.win)
 		id = signal_connect(harvestbtn, "clicked") do widget
 			harvest!(game)
@@ -109,16 +133,33 @@ function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=[(
 			game.board.sizemod=Gtk.G_.value(widget)
 		end
 		id = signal_connect(xoscale, "value-changed") do widget
-			game.board.offsetx=Gtk.G_.value(widget)
+			game.board.offsetx=-Gtk.G_.value(widget)
 		end
 		id = signal_connect(yoscale, "value-changed") do widget
-			game.board.offsety=Gtk.G_.value(widget)
+			game.board.offsety=-Gtk.G_.value(widget)
 		end
 		id = signal_connect(autoharvestcheck, "clicked") do widget
 			game.autoharvest=getproperty(widget,:active,Bool)
 		end
 		id = signal_connect(colockcheck, "clicked") do widget
 			game.colock=getproperty(widget,:active,Bool)
+		end
+		id = signal_connect(deletecheck, "clicked") do widget
+			game.delete=getproperty(widget,:active,Bool)
+		end
+		id = signal_connect(expbtn, "clicked") do widget
+			x=Gtk.G_.value(spexpx)
+			y=Gtk.G_.value(spexpy)
+			r=Gtk.G_.value(spexpshell)
+			remain=expandboard!(game,Integer(r),[(x,y,2)])
+			#if remain<0
+			#	println(abs(remain)," too few black points.")
+			#end
+		end
+		id = signal_connect(centerbtn, "clicked") do widget
+			x=Gtk.G_.value(spexpx)
+			y=Gtk.G_.value(spexpy)
+			center(game,(x,y))
 		end
 	end
 	if points==[0,0,0,0,0]
@@ -190,7 +231,7 @@ function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=[(
 				if game.printscore
 					printpoints(game)
 				end
-				GAccessor.text(label,pointslabel(game))
+				GAccessor.text(scorelabel,pointslabel(game))
 				updategroups!(game)
 			end
 		end

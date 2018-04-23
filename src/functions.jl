@@ -61,7 +61,7 @@ function adjacent(hex,spacing=1,layer=false)
 	end
 	return adj
 end
-
+#=
 function placewhite(spacing::Integer,ori=(0,0,2))
 	white=length(storage[:players])
 	if !haskey(storage[:map],ori) || storage[:map][ori]==white
@@ -102,6 +102,7 @@ function liberties(group)
 	end
 	return libs
 end
+=#
 #=
 function connections()
 	nc=0

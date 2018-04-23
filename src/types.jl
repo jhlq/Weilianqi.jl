@@ -41,6 +41,7 @@ type Game
 	map
 	groups
 	spawns
+	#units
 	unitparams #to be placed
 	color 
 	colors
@@ -57,5 +58,6 @@ type Game
 	window #initial aspect ratio
 	lifemap
 	g #GtkGrid
+	gui::Dict #Gtk placeholder
 	autoharvest::Bool
 end

@@ -416,12 +416,21 @@ function getpoints!(game,unit,loc,distance)
 		points[5]=min(min(l...),lif)
 		l.-=points[5]
 		lif-=points[5]
+		if numcolors(l)==1
+			l[1]=0;l[2]=0;l[3]=0
+		end
 	end
 	if ncol==1 && game.map[loc]==0
 		ci=l[1]==0?(l[2]==0?3:2):1
-		points[1]=min(l[ci],lif)
-		game.lifemap[loc][ci]-=points[1]
-		lif-=points[1]
+		if l[ci]>1;l[ci]=1;end
+		h=min(l[ci],lif,1)
+		points[1]=h
+		l[ci]-=h
+#		if h>=1
+#			game.lifemap[loc][ci]=0
+#		else
+##			game.lifemap[loc][ci]=(1-h)
+#		end
 	else
 		lifc=lif.*unit.color
 		for c in 1:3
@@ -429,6 +438,9 @@ function getpoints!(game,unit,loc,distance)
 				points[c+1]+=min(lifc[c],l[c%3+1])
 				game.lifemap[loc][c%3+1]-=points[c+1]
 			end
+		end
+		if numcolors(l)==1
+			l=[0,0,0]
 		end
 	end
 	game.points.+=points
@@ -443,7 +455,7 @@ function unitharvest!(game,unit)
 
 	white=(1,1,1)
 	#lifemap[hex]+=unit.baselife.*unit.color
-	getpoints!(game,unit,unit.loc,0)
+	points+=getpoints!(game,unit,unit.loc,0)
 	temp=[unit.loc]
 	checked=[unit.loc]
 	for rad in 1:unit.ir
@@ -472,43 +484,22 @@ function unitharvest!(game,unit)
 	end
 	return points
 end
-function allunitsharvest!(game)
-	#groundlevel=false
-	#if unit.pl=[2]
-	#	groundlevel=true
-	#end
-	#bools=(unit.passover,unit.passoverself,unit.inclusive)
-	#influencemap=allinfluence(game,unit.groundlevel,bools)
-	allunitslive!(game)
-	points=[0.0,0,0,0,0]
-	for (loc,unit) in game.map
-		if unit!=0
-			points.+=unit.harvest!(game,unit)
-#			println(points)
-		end
-	end
-	#game.points.+=points
-	game.season+=1
-	push!(game.sequence,:harvest)
-	GAccessor.text(game.g[1,2],pointslabel(game))
-	return points
-end
+
 function checkharvest(game,unit::Unit)
-	game=deepcopy(game) #this is silly, remove ! from unit.harvest!
 	return unit.harvest!(game,unit)
 end
 function checkharvest(game,group::Group)
-	allunitslive!(game) #maybe call only when new units are placed. But then placing units takes longer...
 	points=[0.0,0,0,0,0]
 	for unit in group.units
 		if unit!=0
 			points.+=checkharvest(game,unit)
-#			println(points)
 		end
 	end
 	return points
 end
 function checkharvest(game::Game)
+	game=deepcopy(game) #this is silly, remove ! from unit.harvest!
+	allunitslive!(game)
 	points=[0.0,0,0,0,0]
 	for group in game.groups
 		points+=checkharvest(game,group)
@@ -548,11 +539,12 @@ function newseason!(game)
 	game.season+=1
 end
 function harvest!(game::Game)
-	#game.season+=1
-	#game.points+=peekharvest(game)
+	allunitslive!(game) #maybe call only when new units are placed. But then placing units takes longer...
+	updategroups!(game)
 	allgroupsharvest!(game)
 	collectharvest!(game)
 	newseason!(game)
+	push!(game.sequence,:harvest)
 	GAccessor.text(game.g[1,2],pointslabel(game))
 	return game.points
 end
@@ -581,7 +573,8 @@ function subtractcost(game,cost,color)
 	return true
 end
 function pointslabel(game)
-	points=round.(game.points,3)
+#	points=round.(game.points,3)
+	points=round.(checkharvest(game),3)
 	return "Points!\nBlack:\t$(points[1]) \nRed:\t$(points[2]) \nGreen:\t$(points[3]) \nBlue:\t$(points[4]) \nWhite: $(points[5]) \nSeason: $(game.season) "
 end
 
@@ -663,34 +656,37 @@ function drawboard(game,ctx,w,h)
 	GAccessor.text(game.g[1,2],pointslabel(game))
 end
 function drawboard(game::Game)
+	#println(game.points)
 	ctx=getgc(game.board.c)
 	h=height(game.board.c)
 	w=width(game.board.c)
 	drawboard(game,ctx,w,h)
 end
 
-function expandboard!(game::Game,shells::Integer=6,initlocs=[(6,6,2)],basecost=-1)
+function expandboard!(game::Game,shells::Integer=6,initlocs=[(6,6,2)],basecost=-1,reveal=true)
 	patch=makegrid(shells,initlocs)
-	basecost=game.board.expandbasecost
-	if basecost==-1
-		for iloc in initlocs
-			basecost+=distance(iloc)*10 #should be distance from spawn
-		end
-	end
-	cost=length(patch)+basecost*length(initlocs)
-	remains=game.points[1]-cost
-	if remains>=0
+#	basecost=game.board.expandbasecost
+#	if basecost==-1
+#		for iloc in initlocs
+#			basecost+=distance(iloc)*10 #should be distance from spawn
+#		end
+#	end
+#	cost=length(patch)+basecost*length(initlocs)
+#	remains=game.points[1]-cost
+#	if remains>=0
 		for loc in patch
 			if !in(loc,keys(game.map))
 				game.map[loc]=0
 				push!(game.board.grid,loc)
 			end
 		end
-		game.points[1]=remains
+#		game.points[1]=remains
 		push!(game.sequence,(:expand,[shells,initlocs,basecost]))
-		drawboard(game)
-	end
-	return remains
+		if reveal
+			drawboard(game)
+		end
+#	end
+	return "<3"
 end
 function zoom(game,factor)
 	game.board.sizemod*=factor
@@ -701,34 +697,7 @@ function pass(game)
 	game.color=game.colors[game.colind]
 	drawboard(game)
 end
-function save(game)
-	dir=joinpath(homedir(),"weilianqi","saves",game.name)
-	if !ispath(dir)
-		touch(dir)
-	end
-	io=open(dir,"a+")
-	write(io,string(game.sequence),"\n")
-	close(io)
-end
-#savelite=(game)->write("~/.weilianqi/$(round(Integer,time())).txt","$(game.sequence)")
-function loadsequence!(game::Game,seqstr::String,originoffset=(0,0,0))
-	seq=eval(parse(seqstr))
-	for entry in seq
-		if entry==:harvest
-			allunitsharvest!(game)
-		elseif entry[1]==:expand
-			expandboard!(game,entry[2]...)
-		else
-			(loc,unit)=entry
-			loco=loc.+originoffset
-			game.map[loco]=unit
-			push!(game.sequence,(loco,unit))
-		end
-	end
-	#GAccessor.text(game.g[1,2],pointslabel(game))
-	#drawboard(game)
-	return true
-end
+
 function center(game,hex)
 	loc=hex_to_pixel(hex[1],hex[2],game.board.size)
 	game.board.offsetx=-loc[1]
