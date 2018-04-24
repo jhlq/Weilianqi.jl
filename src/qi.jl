@@ -41,8 +41,9 @@ function loadsequence!(game::Game,seqstr::String,originoffset=(0,0,0))
 		else
 			(loc,unit)=entry
 			loco=loc.+originoffset
-			game.map[loco]=unit
-			push!(game.sequence,(loco,unit))
+			placeunit!(game,unit)
+#			game.map[loco]=unit
+#			push!(game.sequence,(loco,unit))
 		end
 	end
 	#GAccessor.text(game.g[1,2],pointslabel(game))

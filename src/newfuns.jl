@@ -37,7 +37,7 @@ end
 function newgroup(spawns::Array,units::Array)
 	return Group(spawns,units,[0.0,0,0,0,0],false,false)
 end
-function newboard(shells=9,initlocs=[(0,0,2)],grid=0,c=@GtkCanvas(),sizemod=5,size=30,offsetx=0,offsety=0,bgcolor=(0,0,0),gridcolor=(1/2,1/2,1/2),expandbasecost=-1)
+function newboard(shells=6,initlocs=[(0,0,2)],grid=0,c=@GtkCanvas(),sizemod=5,size=30,offsetx=0,offsety=0,bgcolor=(0,0,0),gridcolor=(1/2,1/2,1/2),expandbasecost=-1)
 	if grid==0
 		grid=makegrid(shells,initlocs)
 	end
@@ -52,7 +52,7 @@ function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=[(
 	for loc in board.grid
 		map[loc]=0
 	end
-	game=Game(name,map,Group[],Unit[],unitparams,color,colors,colind,colmax, colock,delete,sequence,board,printscore,points,season,win,window,0,0,Dict(),autoharvest)
+	game=Game(name,map,Group[],Unit[],Unit[],unitparams,color,colors,colind,colmax, colock,delete,sequence,board,printscore,points,season,win,window,0,0,Dict(),autoharvest)
 	#placeseq(game.sequence,game.map)
 	placeseq!(game)
 	updategroups!(game)
@@ -205,42 +205,41 @@ function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=[(
 		end
 		hex=[(round(Int,q),round(Int,r),2),(round(Int,qup),round(Int,rup),3),(round(Int,qdown),round(Int,rdown),1)][best]
 		nu.loc=hex
-		if allowedat(game.unitparams,hex)
-			exists=in(hex,keys(game.map))
-			if exists
-				if game.delete==true && game.map[hex]!=0
-					game.map[hex]=0
-					push!(game.sequence,(hex,0))
-				elseif game.map[hex]==0
-				#	cost=unitcost(game,hex,game.unitparams)
-				#	afforded=subtractcost(game,cost,game.unitparams[1])
-				#	if !afforded
-				#		if game.autoharvest
-				#			harvest!(game)
-				#			afforded=subtractcost(game,cost,game.unitparams[1])
-				#		end
-				#		if !afforded
-				#			println("Not enough points.")
-				#			return
-				#		end
-				#	end
-					#nu=newunit(game.unitparams...)
-					#nu=newunit(game.color,hex,units[game.unitparams[4]])
-					#game.map[hex]=nu
-					#push!(game.sequence,(hex,nu))
-					placeunit!(game,nu)
-					if !game.colock
-						game.colind=game.colind%game.colmax+1
-						game.color=game.colors[game.colind]
-						game.unitparams[1]=game.color
-					end
+		exists=in(hex,keys(game.map))
+		if exists
+			if game.delete==true && game.map[hex]!=0 && isa(game.map[hex],Unit)
+				removeunit!(game,game.map[hex])
+#				game.map[hex]=0
+#				push!(game.sequence,(hex,0))
+			elseif game.map[hex]==0 && allowedat(game.unitparams,hex)
+			#	cost=unitcost(game,hex,game.unitparams)
+			#	afforded=subtractcost(game,cost,game.unitparams[1])
+			#	if !afforded
+			#		if game.autoharvest
+			#			harvest!(game)
+			#			afforded=subtractcost(game,cost,game.unitparams[1])
+			#		end
+			#		if !afforded
+			#			println("Not enough points.")
+			#			return
+			#		end
+			#	end
+				#nu=newunit(game.unitparams...)
+				#nu=newunit(game.color,hex,units[game.unitparams[4]])
+				#game.map[hex]=nu
+				#push!(game.sequence,(hex,nu))
+				placeunit!(game,nu)
+				if !game.colock
+					game.colind=game.colind%game.colmax+1
+					game.color=game.colors[game.colind]
+					game.unitparams[1]=game.color
 				end
-				if game.printscore
-					printpoints(game)
-				end
-				GAccessor.text(scorelabel,pointslabel(game))
-				updategroups!(game)
 			end
+			if game.printscore
+				printpoints(game)
+			end
+			GAccessor.text(scorelabel,pointslabel(game))
+			updategroups!(game)
 		end
 		drawboard(game,ctx,w,h)
 		reveal(widget)

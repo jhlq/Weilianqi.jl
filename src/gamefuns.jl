@@ -105,12 +105,14 @@ end
 function placeseq!(game)
 	for (loc,unit) in game.sequence
 		if game.map[loc]!=0
-			error("Something in the way at $loc")
+			#println("Something in the way at $loc")
+		else
+			placeunit!(game,unit)
 		end
-		if unit.canspawn
-			push!(game.spawns,unit)
-		end
-		game.map[loc]=unit
+#		if unit.canspawn
+#			push!(game.spawns,unit)
+#		end
+#		game.map[loc]=unit
 	end
 end
 function getgroup(game,unit::Unit,color=-1,connectedunits=Unit[],lifemap=-1) #why don't white units get added to spawns? Maybe they shouldn't, bug in our favor. They should be available as partial spawns, divide white into 3 spawn units
@@ -215,17 +217,17 @@ function samegroup(group1::Group,group2::Group)
 	end
 	return true
 end
-function updategroups!(game::Game)
+function updategroups!(game::Game) #sometimes doesn't find most recent unit..? Or is there an issue when deleting units?
 	groups=Group[]
 	for spawn in game.spawns
 		push!(groups,getgroup(game,spawn))
 	end
 	unique=Group[groups[1]]
 	for group in groups
-		notin=true
+		#notin=true
 		for uniq in unique
 			if samegroup(group,uniq)
-				notin=false
+				#notin=false
 				break
 			end
 			push!(unique,group)
@@ -237,6 +239,23 @@ end
 function placeunit!(game,unit)
 	game.map[unit.loc]=unit
 	push!(game.sequence,(unit.loc,unit))
+	push!(game.units,unit)
+	if unit.canspawn
+		push!(game.spawns,unit)
+	end
+	return "<3"
+end
+function removeunit!(game,unit::Unit)
+	game.map[unit.loc]=0
+	push!(game.sequence,(unit.loc,0))
+	i=findfirst(u->u==unit,game.units)
+	if i>0
+		deleteat!(game.units,i)
+	end
+	if unit.canspawn
+		i=findfirst(u->u==unit,game.spawns)
+		deleteat!(game.units,i)
+	end
 	return "<3"
 end
 function allunitslive!(game)
@@ -393,19 +412,37 @@ function harvest!(game::Game)
 	GAccessor.text(game.g[1,2],pointslabel(game))
 	return game.points
 end
-
+function bonds(game)
+	nc=0
+	for (loc,unit) in game.map
+		if isa(unit,Unit) 
+			for c in adjacent(unit.loc)
+				if in(c,keys(game.map))
+					ac=game.map[c]
+					if isa(ac,Unit) && ac.color!=unit.color
+						nc+=1
+					end
+				end
+			end
+		end
+	end
+	return nc/2
+end
 function pointslabel(game)
 #	points=round.(game.points,3)
 	points=round.(checkharvest(game),3)
-	return "Points!\nBlack:\t$(points[1]) \nRed:\t$(points[2]) \nGreen:\t$(points[3]) \nBlue:\t$(points[4]) \nWhite: $(points[5]) \nSeason: $(game.season) "
+	return "Points!\nBlack:\t$(points[1]) \nRed:\t$(points[2]) \nGreen:\t$(points[3]) \nBlue:\t$(points[4]) \nWhite: $(points[5]) \nUnits: $(length(game.units))\nBonds: $(bonds(game)) "
 end
 
-function undo!(game) #wont undo captures? Maybe when reloading sequence. There aren't captures anymore
-	hex=pop!(game.sequence)
-	game.map[hex[1]]=0
-	game.colind-=1
-	if game.colind<1
-		game.colind=game.colmax
+function undo!(game) #wont undo captures? Maybe when reloading sequence. There aren't captures anymore. Wont undo board expansions
+#	hex=pop!(game.sequence)
+#	game.map[hex[1]]=0
+	removeunit!(game.units[end])
+	if !game.colock
+		game.colind-=1
+		if game.colind<1
+			game.colind=game.colmax
+		end
 	end
 	return hex
 end
@@ -535,3 +572,4 @@ function center(game,hex)
 	drawboard(game)
 	return true
 end
+

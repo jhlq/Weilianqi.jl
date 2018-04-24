@@ -43,7 +43,7 @@ type Game
 	map
 	groups
 	spawns
-	#units
+	units
 	unitparams #to be placed
 	color 
 	colors
