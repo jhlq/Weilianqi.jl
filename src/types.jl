@@ -30,8 +30,10 @@ type Board
 	c #GtkCanvas
 	sizemod::Number #zoom
 	size::Number
-	offsetx::Number #pan
+	offsetx::Number 
 	offsety::Number
+	panx::Number 
+	pany::Number
 	bgcolor #background
 	gridcolor
 	expandbasecost::Number

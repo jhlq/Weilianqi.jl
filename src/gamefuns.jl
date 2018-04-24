@@ -17,30 +17,6 @@ function resetmap(game)
 	reveal(game.board.c)
 end
 
-function getgroup_dep(game,hex)
-	player=game.map[hex]
-	white=(1,1,1)
-	if player==0
-		return []
-	end
-	group=Tuple[hex]
-	temp=[hex]
-	while !isempty(temp)
-		temp2=Tuple[]
-		for t in temp
-			for h in adjacent(t)
-				if !in(h,group) && !in(h,temp) && !in(h,temp2) && in(h,keys(game.map)) && (game.map[h]==player || game.map[h]==white)
-					push!(temp2,h)
-				end
-			end
-		end
-		for t2 in temp2
-			push!(group,t2)
-		end
-		temp=temp2
-	end
-	return group
-end
 function getcellgroup(game,unit::Unit)
 	white=(1,1,1)
 	group=[unit]
@@ -74,75 +50,7 @@ function getcellgroup(game,unit::Unit)
 	end
 	return cellgroup
 end
-function influence(game,hex,groundlevel=false,passover=false,passoverself=true,inclusive=true)
-	unit=game.map[hex]
-	white=(1,1,1)
-	group=Dict(hex=>6.0)
-	temp=Dict(hex=>6.0)
-	for rad in 1:unit.ir
-		temp2=Dict()
-		for t in temp
-			for h in adjacent(t[1],1,groundlevel)
-				if !in(h,keys(group)) && !in(h,keys(temp)) && !in(h,keys(temp2)) && in(h,keys(game.map)) 
-					inf=1/rad
-					if game.map[h]==0 || passover
-						temp2[h]=inf
-					elseif passoverself && (game.map[h].color==unit.color || game.map[h].color==white)
-						temp2[h]=inf
-					end
-					if inclusive && game.map[h]!=0 && !in(h,keys(temp2))
-						group[h]=inf
-					end
-				end
-			end
-		end
-		for (h2,i2) in temp2
-			group[h2]=i2
-		end
-		temp=temp2
-	end
-	return group
-end
-function allinfluence(game,groundlevel=false,bools=(true,false,true,true))
-	influencemap=Dict()
-	for (loc,player) in game.map
-		if !groundlevel || loc[3]==2
-			influencemap[loc]=[0.0,0,0]
-		end
-	end
-	for (loc,unit) in game.map
-		if unit!=0
-			col=unit.color
-			infl=influence(game,loc,bools...)
-			for inf in infl
-				influencemap[inf[1]].+=inf[2].*col
-			end
-		end
-	end
-	return influencemap
-end
 
-function peekharvest(game,groundlevel=false,bools=(true,false,true,true))
-	influencemap=allinfluence(game,groundlevel,bools)
-	brgbw=[0.0,0,0,0,0]
-	for (iloc,inf) in influencemap
-		ninf=numcolors(inf)
-		if ninf==3
-			brgbw[5]+=min(inf...)
-		end
-		if ninf==1
-			brgbw[1]+=min(sum(inf),1)
-		else
-			for c in 1:3
-				brgbw[c+1]+=min(inf[c],inf[c%3+1])
-			end
-		end
-	end
-	for c in 2:4
-		brgbw[c]-=brgbw[5]
-	end
-	return brgbw
-end
 function spreadlife!(game,unit,lifemap)
 	white=(1,1,1)
 	hex=unit.loc
@@ -193,71 +101,7 @@ function unitslive(game,color)
 	return lifemap
 end
 
-function lifluence(game,unit::Unit)
-	lifemap=unitslive(game,unit.color)
-	connectedunits=Unit[unit]
-	cwhite=Unit[]
-	group=[unit.loc]
-	if unit.color==(1,1,1)
-		push!(cwhite,unit)
-		stuff=Dict()
-		#stuff[:loced]=[unit.loc]
-		reach=makegrid(7)
-		for loc in reach
-			u=game.map[loc]
-			if isa(u,Unit) && u.color!=(1,1,1) && !haskey(stuff,u.color)	#!in(loc,stuff[:loced])
-				lmu=lifluence(game,u)
-				if in(unit,lmu[3])
-					stuff[u.color]=lmu
-				end
-			end
-		end
-		for (col,lm) in stuff
-			for l in lm[1]
-				if !in(l,group)
-					push!(group,l)
-				end
-			end
-			for cu in lm[2]
-				if !in(cu,connectedunits)
-					push!(connectedunits,cu)
-				end
-			end
-			for cw in lm[3]
-				if !in(cw,cwhite)
-					push!(cwhite,cw)
-				end
-			end
-		end
-		return (group,connectedunits,cwhite)
-	end
-	temp=[unit.loc]
-	while !isempty(temp)
-		temp2=Tuple[]
-		for t in temp
-			for h in adjacent(t)
-#				lmt=lifemap[t]
-#				lmh=lifemap[h]
-#				canspread=true
-				if !in(h,group) && !in(h,temp) && !in(h,temp2) && in(h,game.board.grid) && sum(lifemap[h])>0
-					push!(temp2,h)
-					u=game.map[h]
-					if isa(u,Unit) 
-						push!(connectedunits,u)
-						if u.color==(1,1,1)
-							push!(cwhite,u)
-						end
-					end
-				end
-			end
-		end
-		for t2 in temp2
-			push!(group,t2)
-		end
-		temp=temp2
-	end
-	return (group,connectedunits,cwhite)
-end
+
 function placeseq!(game)
 	for (loc,unit) in game.sequence
 		if game.map[loc]!=0
@@ -389,10 +233,11 @@ function updategroups!(game::Game)
 	end
 	game.groups=unique	
 end
-function connectedunits(game,unit)
-	(lif,cu,cw)=lifluence(game,unit)
-	cellconnected=getcellgroup(game,unit)
-	return (cw,cellconnected,cu) #connected white units, connected by cells, connected by lifluence
+
+function placeunit!(game,unit)
+	game.map[unit.loc]=unit
+	push!(game.sequence,(unit.loc,unit))
+	return "<3"
 end
 function allunitslive!(game)
 	lifemap=Dict()
@@ -443,7 +288,7 @@ function getpoints!(game,unit,loc,distance)
 			l=[0,0,0]
 		end
 	end
-	game.points.+=points
+	#game.points.+=points
 	#println(points,loc)
 	return points
 end
@@ -498,7 +343,7 @@ function checkharvest(game,group::Group)
 	return points
 end
 function checkharvest(game::Game)
-	game=deepcopy(game) #this is silly, remove ! from unit.harvest!
+	game=deepcopy(game) #this is silly, remove ! from unit.harvest! Done, still updates lifemap thou
 	allunitslive!(game)
 	points=[0.0,0,0,0,0]
 	for group in game.groups
@@ -548,37 +393,14 @@ function harvest!(game::Game)
 	GAccessor.text(game.g[1,2],pointslabel(game))
 	return game.points
 end
-function unitcost(game,loc,unitparams)
-	distance=nearestwhite(game,loc,loc[3]==2)
-	cost=distance*unitparams[2]
-	cost*=sum(unitparams[1]) #only if sum>1?
-	return cost
-end
-function unitcost(game,unit::Unit)
-	return unit.costfun(game)
-end
-function subtractcost(game,cost,color)
-	rgb=cost.*color
-	srgb=sum(rgb)
-	if rgb[1]<=game.points[2] && rgb[2]<=game.points[3] && rgb[3]<=game.points[4]
-		game.points[2]-=rgb[1]
-		game.points[3]-=rgb[2]
-		game.points[4]-=rgb[3]
-	elseif srgb/2<=game.points[5] && srgb/2<=game.points[1]
-		game.points[1]-=srgb/2
-		game.points[5]-=srgb/2
-	else
-		return false
-	end
-	return true
-end
+
 function pointslabel(game)
 #	points=round.(game.points,3)
 	points=round.(checkharvest(game),3)
 	return "Points!\nBlack:\t$(points[1]) \nRed:\t$(points[2]) \nGreen:\t$(points[3]) \nBlue:\t$(points[4]) \nWhite: $(points[5]) \nSeason: $(game.season) "
 end
 
-function undo!(game) #wont undo captures? Maybe when reloading sequence
+function undo!(game) #wont undo captures? Maybe when reloading sequence. There aren't captures anymore
 	hex=pop!(game.sequence)
 	game.map[hex[1]]=0
 	game.colind-=1
@@ -595,7 +417,7 @@ function nearestwhite(game,hex,layer=false)
 	white=(1,1,1)
 	group=[hex]
 	temp=[hex]
-	for rad in 1:game.board.shells*9
+	for rad in 1:1000000
 		temp2=[]
 		for t in temp
 			for h in adjacent(t,1,layer)
@@ -628,16 +450,18 @@ function drawboard(game,ctx,w,h)
 	arc(ctx, size, size, 3size, 0, 2pi)
 	fill(ctx)
 	set_source_rgb(ctx, game.board.gridcolor...)
+	offx=game.board.offsetx+game.board.panx
+	offy=game.board.offsety+game.board.pany
 	for loc in game.board.grid
 		if loc[3]==2
 			x,y=hex_to_pixel(loc[1],loc[2],size)
-			hexlines(ctx,x+w/2+game.board.offsetx,y+h/2+game.board.offsety,size)
+			hexlines(ctx,x+w/2+offx,y+h/2+offy,size)
 		end
 	end
 	for move in game.map
 		if move[2]!=0
 			set_source_rgb(ctx,move[2].color...)
-			offset=(game.board.offsetx,game.board.offsety)
+			offset=(offx,offy)
 			if move[1][3]==1
 				offset=offset.+(-cos(pi/6)*size,sin(pi/6)*size)
 			elseif move[1][3]==3
@@ -699,9 +523,15 @@ function pass(game)
 end
 
 function center(game,hex)
+	game.board.sizemod=Gtk.G_.value(game.gui[:zadj])/10
+	game.board.size=game.window[2]/(game.board.shells*game.board.sizemod)
 	loc=hex_to_pixel(hex[1],hex[2],game.board.size)
-	game.board.offsetx=-loc[1]
-	game.board.offsety=-loc[2]
+	game.board.offsetx=-loc[1]+getproperty(game.gui[:xadj],:value,Float64)
+	game.board.offsety=-loc[2]+getproperty(game.gui[:yadj],:value,Float64)
+	#game.board.panx=0#-getproperty(game.gui[:xadj],:value,Float64)
+	#game.board.pany=0
+	
+#	setproperty!(game.gui[:yadj],:value,0)
 	drawboard(game)
 	return true
 end

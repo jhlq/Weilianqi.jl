@@ -41,7 +41,7 @@ function newboard(shells=9,initlocs=[(0,0,2)],grid=0,c=@GtkCanvas(),sizemod=5,si
 	if grid==0
 		grid=makegrid(shells,initlocs)
 	end
-	board=Board(shells,initlocs,grid,c, sizemod,size,offsetx,offsety,bgcolor,gridcolor,expandbasecost)
+	board=Board(shells,initlocs,grid,c, sizemod,size,offsetx,offsety,0,0,bgcolor,gridcolor,expandbasecost)
 	return board
 end
 
@@ -67,19 +67,19 @@ function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=[(
 		colockcheck = GtkCheckButton("Lock color")
 		setproperty!(colockcheck,:active,game.colock)
 		scalemaxfac=100
-		zoomscale = GtkScale(false, 1:scalemaxfac)
+		zoomscale = GtkScale(false, 1:scalemaxfac*10)
 		zlabel=GtkLabel("Zoom")
 		zadj=Gtk.Adjustment(zoomscale)
-		setproperty!(zadj,:value,game.board.sizemod)
+		setproperty!(zadj,:value,game.board.sizemod*10)
 		omax=scalemaxfac*30
 		xoscale = GtkScale(false, -omax:omax)
 		xlabel=GtkLabel("Pan x")
 		xadj=Gtk.Adjustment(xoscale)
-		setproperty!(xadj,:value,game.board.offsetx)
+		setproperty!(xadj,:value,game.board.panx)
 		yoscale = GtkScale(false, -omax:omax)
 		ylabel=GtkLabel("Pan y")
 		yadj=Gtk.Adjustment(yoscale)
-		setproperty!(yadj,:value,game.board.offsety)
+		setproperty!(yadj,:value,game.board.pany)
 		spexpx=GtkSpinButton(-1000:1000)
 		Gtk.G_.value(spexpx,game.board.shells)
 		spexpy=GtkSpinButton(-1000:1000)
@@ -119,6 +119,11 @@ function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=[(
 		game.g=g
 		game.gui[:harvestbtn]=harvestbtn
 		game.gui[:scorelabel]=scorelabel
+		game.gui[:yoscale]=yoscale
+		game.gui[:xoscale]=xoscale
+		game.gui[:zadj]=zadj
+		game.gui[:xadj]=xadj
+		game.gui[:yadj]=yadj
 		setproperty!(box,:expand,game.board.c,true)
 		game.win=GtkWindow(box,"Weilianqi $name",window[1],window[2])
 		showall(game.win)
@@ -130,13 +135,16 @@ function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=[(
 			pass(game)
 		end
 		id = signal_connect(zoomscale, "value-changed") do widget
-			game.board.sizemod=Gtk.G_.value(widget)
+			game.board.sizemod=Gtk.G_.value(widget)/10
+			drawboard(game)
 		end
 		id = signal_connect(xoscale, "value-changed") do widget
-			game.board.offsetx=-Gtk.G_.value(widget)
+			game.board.panx=-Gtk.G_.value(widget)*10
+			drawboard(game)
 		end
 		id = signal_connect(yoscale, "value-changed") do widget
-			game.board.offsety=-Gtk.G_.value(widget)
+			game.board.pany=-Gtk.G_.value(widget)*10
+			drawboard(game)
 		end
 		id = signal_connect(autoharvestcheck, "clicked") do widget
 			game.autoharvest=getproperty(widget,:active,Bool)
@@ -157,6 +165,8 @@ function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=[(
 			#end
 		end
 		id = signal_connect(centerbtn, "clicked") do widget
+			#xadj=Gtk.Adjustment(xoscale)
+			#setproperty!(xadj,:value,0)
 			x=Gtk.G_.value(spexpx)
 			y=Gtk.G_.value(spexpy)
 			center(game,(x,y))
@@ -175,18 +185,26 @@ function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=[(
 	end
 	draw(drawsignal,game.board.c)
 	game.board.c.mouse.button1press = @guarded (widget, event) -> begin
-		ctx = getgc(widget)
-		h = height(game.board.c)
-		w = width(game.board.c)
+		ctx=getgc(widget)
+		h=height(game.board.c)
+		w=width(game.board.c)
+		nu=newunit(game.color,0,units[game.unitparams[4]])
 		size=game.board.size
-		q,r=pixel_to_hex(event.x-w/2-game.board.offsetx,event.y-h/2-game.board.offsety,size)
+		offx=game.board.offsetx+game.board.panx
+		offy=game.board.offsety+game.board.pany
+		q,r=pixel_to_hex(event.x-w/2-offx,event.y-h/2-offy,size)
 		maindiff=abs(round(q)-q)+abs(round(r)-r)
 		qup,rup=pixel_to_hex(event.x-w/2+size*cos(pi/6),event.y-h/2+sin(pi/6)*size,size)
 		updiff=abs(round(qup)-qup)+abs(round(rup)-rup)
 		qdown,rdown=pixel_to_hex(event.x-w/2+size*cos(pi/6),event.y-h/2-sin(pi/6)*size,size)
 		downdiff=abs(round(qdown)-qdown)+abs(round(rdown)-rdown)
-		best=findmin([maindiff,updiff,downdiff])[2]
+		if length(nu.pl)==1
+			best=(nu.pl[1]+1)%3+1
+		else
+			best=findmin([maindiff,updiff,downdiff])[2]
+		end
 		hex=[(round(Int,q),round(Int,r),2),(round(Int,qup),round(Int,rup),3),(round(Int,qdown),round(Int,rdown),1)][best]
+		nu.loc=hex
 		if allowedat(game.unitparams,hex)
 			exists=in(hex,keys(game.map))
 			if exists
@@ -194,34 +212,23 @@ function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=[(
 					game.map[hex]=0
 					push!(game.sequence,(hex,0))
 				elseif game.map[hex]==0
-					cost=unitcost(game,hex,game.unitparams)
-					afforded=subtractcost(game,cost,game.unitparams[1])
-					if !afforded
-						if game.autoharvest
-							harvest!(game)
-							afforded=subtractcost(game,cost,game.unitparams[1])
-						end
-						if !afforded
-							println("Not enough points.")
-							return
-						end
-					end
+				#	cost=unitcost(game,hex,game.unitparams)
+				#	afforded=subtractcost(game,cost,game.unitparams[1])
+				#	if !afforded
+				#		if game.autoharvest
+				#			harvest!(game)
+				#			afforded=subtractcost(game,cost,game.unitparams[1])
+				#		end
+				#		if !afforded
+				#			println("Not enough points.")
+				#			return
+				#		end
+				#	end
 					#nu=newunit(game.unitparams...)
-					nu=newunit(game.color,hex,units[game.unitparams[4]])
-					game.map[hex]=nu
-					push!(game.sequence,(hex,nu))
-#					hs=adjacent(hex)	#this checks if captured
-#					push!(hs,hex)
-#					for he in hs
-#						if in(he,keys(storage[:map]))
-#							g=getgroup(he)
-#							if !isempty(g) && liberties(g)==0
-#								for gh in g
-#									storage[:map][gh]=0
-#								end
-#							end
-#						end
-#					end
+					#nu=newunit(game.color,hex,units[game.unitparams[4]])
+					#game.map[hex]=nu
+					#push!(game.sequence,(hex,nu))
+					placeunit!(game,nu)
 					if !game.colock
 						game.colind=game.colind%game.colmax+1
 						game.color=game.colors[game.colind]
