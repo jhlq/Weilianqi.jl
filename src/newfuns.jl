@@ -13,6 +13,10 @@ function newunit(color=(1,0,0),loc=(0,0,Inf),unitspec::Dict=Dict())
 	canspawn=haskey(unitspec,:canspawn)?unitspec[:canspawn]:false
 	return Unit(color,ir,pl,passover,passoverself,inclusive,loc,groundlevel,live,baselife,harvest,name,costfun,canspawn,false)
 end
+function newunit(dic::Dict)
+	unitspec=units[dic[:name]]
+	return newunit(dic[:color],dic[:loc],unitspec)
+end
 function newgroup(unit::Unit)
 	units=[unit]
 	spawns=Unit[]
@@ -45,7 +49,7 @@ function newboard(shells=6,initlocs=[(0,0,2)],grid=0,c=@GtkCanvas(),sizemod=5,si
 	return board
 end
 
-function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=[(1,0,0),3,[2],"standard"],map=Dict(),unit=0,color=(1,0,0),colors=[(1,0,0),(0,1,0),(0,0,1),(1,1,1)],colind=1,colmax=3,colock=false,delete=false,sequence=[((0,0,2),newunit((1,1,1),(0,0,2),units["white"]))],board=0,printscore=false,points=[0.0,0,0,0,0],season=0,win=0,window=(900,700),autoharvest=true)
+function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=[(1,0,0),3,[2],"standard"],map=Dict(),unit=0,color=(1,0,0),colors=[(1,0,0),(0,1,0),(0,0,1),(1,1,1)],colind=1,colmax=3,colock=false,delete=false,sequence=[newunit((1,1,1),(0,0,2),units["white"])],board=0,printscore=false,points=[0.0,0,0,0,0],season=0,win=0,window=(900,700),autoharvest=true)
 	if board==0
 		board=newboard(boardparams...)
 	end
@@ -54,13 +58,16 @@ function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=[(
 	end
 	game=Game(name,map,Group[],Unit[],Unit[],unitparams,color,colors,colind,colmax, colock,delete,sequence,board,printscore,points,season,win,window,0,0,Dict(),autoharvest)
 	#placeseq(game.sequence,game.map)
-	placeseq!(game)
+	placeseq!(game)	
 	updategroups!(game)
 	if win==0
 		box=GtkBox(:h)
-		harvestbtn=GtkButton("Harvest")
+		savebtn=GtkButton("Save")
+		loadbtn=GtkButton("Load")
+		nameentry=GtkEntry()
+		setproperty!(nameentry,:text,game.name)
 		scorelabel=GtkLabel(pointslabel(game))
-		passbtn=GtkButton("Next color (overrides colorlock)")
+		passbtn=GtkButton("Next color")
 		#colabel=GtkLabel(string(game.color))
 		autoharvestcheck = GtkCheckButton("Autoharvest")
 		setproperty!(autoharvestcheck,:active,game.autoharvest)
@@ -94,11 +101,13 @@ function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=[(
 		deletecheck=GtkCheckButton("Delete")
 		setproperty!(deletecheck,:active,game.delete)
 		g=GtkGrid()
-		g[1,1]=harvestbtn
+		g[1,1]=savebtn
+		g[2,1]=nameentry
+		g[3,1]=loadbtn
 		g[1,2]=scorelabel
 		g[2,3]=passbtn
-		g[1,4]=autoharvestcheck
-		g[1,5]=colockcheck
+		#g[1,4]=autoharvestcheck
+		g[1,3]=colockcheck
 		g[1,6]=zlabel
 		g[1,7]=xlabel
 		g[1,8]=ylabel
@@ -117,7 +126,7 @@ function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=[(
 		push!(box,game.board.c)	
 		push!(box,g)
 		game.g=g
-		game.gui[:harvestbtn]=harvestbtn
+		#game.gui[:harvestbtn]=harvestbtn
 		game.gui[:scorelabel]=scorelabel
 		game.gui[:yoscale]=yoscale
 		game.gui[:xoscale]=xoscale
@@ -127,9 +136,12 @@ function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=[(
 		setproperty!(box,:expand,game.board.c,true)
 		game.win=GtkWindow(box,"Weilianqi $name",window[1],window[2])
 		showall(game.win)
-		id = signal_connect(harvestbtn, "clicked") do widget
-			harvest!(game)
-			#GAccessor.text(label,pointslabel(game))
+		id = signal_connect(savebtn, "clicked") do widget
+			game.name=getproperty(nameentry,:text,String)
+			save(game)
+		end
+		id = signal_connect(loadbtn, "clicked") do widget
+			loadgame(getproperty(nameentry,:text,String))
 		end
 		id = signal_connect(passbtn, "clicked") do widget
 			pass(game)
@@ -172,9 +184,9 @@ function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=[(
 			center(game,(x,y))
 		end
 	end
-	if points==[0,0,0,0,0]
-		harvest!(game)
-	end
+#	if points==[0,0,0,0,0]
+#		harvest!(game)
+#	end
 	@guarded function drawsignal(widget)
 		ctx=getgc(widget)
 		h=height(widget)

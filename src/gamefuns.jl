@@ -103,9 +103,18 @@ end
 
 
 function placeseq!(game)
-	for (loc,unit) in game.sequence
-		if game.map[loc]!=0
-			#println("Something in the way at $loc")
+	for entry in game.sequence
+		if isa(entry,Unit)
+			placeunit!(game,entry)
+		elseif entry==:harvest
+			harvest!(game)
+		elseif entry[1]==:expand
+			expandboard!(game,entry[2]...,false)
+		end
+	end
+#=
+	for unit in game.sequence
+		if game.map[unit.loc]!=0
 		else
 			placeunit!(game,unit)
 		end
@@ -114,6 +123,7 @@ function placeseq!(game)
 #		end
 #		game.map[loc]=unit
 	end
+=#
 end
 function getgroup(game,unit::Unit,color=-1,connectedunits=Unit[],lifemap=-1) #why don't white units get added to spawns? Maybe they shouldn't, bug in our favor. They should be available as partial spawns, divide white into 3 spawn units
 	if color==-1
@@ -237,11 +247,17 @@ function updategroups!(game::Game) #sometimes doesn't find most recent unit..? O
 end
 
 function placeunit!(game,unit)
-	game.map[unit.loc]=unit
-	push!(game.sequence,(unit.loc,unit))
-	push!(game.units,unit)
-	if unit.canspawn
-		push!(game.spawns,unit)
+	if game.map[unit.loc]==0
+		game.map[unit.loc]=unit
+		if !in(unit,game.sequence) 
+			push!(game.sequence,unit)
+		end
+		if !in(unit,game.units) 
+			push!(game.units,unit)
+		end
+		if unit.canspawn && !in(unit,game.spawns)
+			push!(game.spawns,unit)
+		end
 	end
 	return "<3"
 end
@@ -307,8 +323,6 @@ function getpoints!(game,unit,loc,distance)
 			l=[0,0,0]
 		end
 	end
-	#game.points.+=points
-	#println(points,loc)
 	return points
 end
 function unitharvest!(game,unit)
@@ -389,7 +403,6 @@ end
 function collectharvest!(game::Game)
 	for group in game.groups
 		game.points+=group.points
-		#println(game.points)
 		group.points-=group.points
 	end
 end
@@ -517,7 +530,6 @@ function drawboard(game,ctx,w,h)
 	GAccessor.text(game.g[1,2],pointslabel(game))
 end
 function drawboard(game::Game)
-	#println(game.points)
 	ctx=getgc(game.board.c)
 	h=height(game.board.c)
 	w=width(game.board.c)

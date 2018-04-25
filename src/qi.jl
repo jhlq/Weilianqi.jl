@@ -26,13 +26,37 @@ function save(game)
 	if !ispath(dir)
 		touch(dir)
 	end
+	dic=Dict()
+	dic[:name]=game.name
+	dic[:shells]=game.board.shells
+	dic[:initlocs]=game.board.initlocs
+	dic[:colind]=game.colind
+	dic[:colmax]=game.colmax
+	dic[:colock]=game.colock
+	dic[:delete]=game.delete
+	dic[:sequence]=[]
+	for entry in game.sequence
+		if isa(entry,Unit)
+			unit=entry
+		elseif !isa(entry,Symbol) && length(entry)>1 && isa(entry[2],Unit)
+			unit=entry[2]
+		else
+			push!(dic[:sequence],entry)
+			continue
+		end
+		udic=Dict()
+		udic[:name]=unit.name
+		udic[:color]=unit.color
+		udic[:loc]=unit.loc
+		push!(dic[:sequence],udic)
+	end
 	io=open(dir,"a+")
-	write(io,string(game.sequence),"\n")
+	write(io,string(dic),"\n")
 	close(io)
 end
 #savelite=(game)->write("~/.weilianqi/$(round(Integer,time())).txt","$(game.sequence)")
-function loadsequence!(game::Game,seqstr::String,originoffset=(0,0,0))
-	seq=eval(parse(seqstr))
+function loadsequence!(game::Game,seq,originoffset=(0,0,0))
+	#seq=eval(parse(seqstr))
 	for entry in seq
 		if entry==:harvest
 			harvest!(game)
@@ -50,11 +74,35 @@ function loadsequence!(game::Game,seqstr::String,originoffset=(0,0,0))
 	#drawboard(game)
 	return true
 end
+function loadic(dic,originoffset=(0,0,0))
+	#haskey(dic,:shells)
+	#game.board=newboard(dic[:shells],dic[:initlocs])
+	game=newgame(dic[:name],[dic[:shells],dic[:initlocs]])
+	game.colind=dic[:colind]
+	game.colmax=dic[:colmax]
+	game.colock=dic[:colock]
+	game.delete=dic[:delete]
+	for entry in dic[:sequence]
+		if isa(entry,Dict)
+			unit=newunit(entry)
+			unit.loc=unit.loc.+originoffset
+			placeunit!(game,unit)
+		elseif entry==:harvest
+			harvest!(game)
+		elseif entry[1]==:expand
+			expandboard!(game,entry[2]...,false)
+		end
+	end
+end
 function loadgame(name::String,backtrack::Integer=0)
-	game=newgame(name)
 	path=joinpath(homedir(),"weilianqi","saves",name)
 	lines=readlines(path)
-	seqstr=lines[end-backtrack]
-	loadsequence!(game,seqstr)
+	dic=eval(parse(lines[end-backtrack]))
+	if isa(dic,Dict)
+		game=loadic(dic)
+	else
+		game=newgame(name)
+		loadsequence!(game,dic)
+	end
 	return game
 end
