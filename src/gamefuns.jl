@@ -263,7 +263,7 @@ function placeunit!(game,unit)
 end
 function removeunit!(game,unit::Unit)
 	game.map[unit.loc]=0
-	push!(game.sequence,(unit.loc,0))
+	push!(game.sequence,(:delete,unit))
 	i=findfirst(u->u==unit,game.units)
 	if i>0
 		deleteat!(game.units,i)
@@ -325,7 +325,7 @@ function getpoints!(game,unit,loc,distance)
 	end
 	return points
 end
-function unitharvest!(game,unit)
+function unitharvest(game,unit)
 	points=[0.0,0,0,0,0]
 	if unit.harvested
 		return points
@@ -364,7 +364,7 @@ function unitharvest!(game,unit)
 end
 
 function checkharvest(game,unit::Unit)
-	return unit.harvest!(game,unit)
+	return unit.harvest(game,unit)
 end
 function checkharvest(game,group::Group)
 	points=[0.0,0,0,0,0]
@@ -376,7 +376,8 @@ function checkharvest(game,group::Group)
 	return points
 end
 function checkharvest(game::Game)
-	game=deepcopy(game) #this is silly, remove ! from unit.harvest! Done, still updates lifemap thou
+	#game=deepcopy(game) #this is silly, remove ! from unit.harvest! Done, still updates lifemap thou. 
+	updategroups!(game) #this shouldn't count as modifying the state of the game since if they arent correct the state is incorrect and should always be updated
 	allunitslive!(game)
 	points=[0.0,0,0,0,0]
 	for group in game.groups
@@ -427,7 +428,9 @@ function harvest!(game::Game)
 end
 function bonds(game)
 	nc=0
+	#checked=[]
 	for (loc,unit) in game.map
+	#	push!(checked,loc)
 		if isa(unit,Unit) 
 			for c in adjacent(unit.loc)
 				if in(c,keys(game.map))
@@ -439,12 +442,15 @@ function bonds(game)
 			end
 		end
 	end
-	return nc/2
+	return Int(nc/2)
 end
 function pointslabel(game)
-#	points=round.(game.points,3)
-	points=round.(checkharvest(game),3)
-	return "Points!\nBlack:\t$(points[1]) \nRed:\t$(points[2]) \nGreen:\t$(points[3]) \nBlue:\t$(points[4]) \nWhite: $(points[5]) \nUnits: $(length(game.units))\nBonds: $(bonds(game)) "
+	points=round.(checkharvest(game),1)
+	rgb=[0,0,0]
+	for unit in game.units
+		rgb.+=unit.color
+	end
+	return "Points!\nBlack:\t$(points[1])\nRed:\t$(points[2])\nGreen:\t$(points[3])\nBlue:\t$(points[4])\nWhite: $(points[5])\nInformation!\nUnits: $(length(game.units))\nRed: $(rgb[1])\nGreen: $(rgb[2])\nBlue: $(rgb[3])\nBonds: $(bonds(game))"
 end
 
 function undo!(game) #wont undo captures? Maybe when reloading sequence. There aren't captures anymore. Wont undo board expansions
@@ -527,7 +533,7 @@ function drawboard(game,ctx,w,h)
 	end
 	#showall(game.board.win)
 	reveal(game.board.c)
-	GAccessor.text(game.g[1,2],pointslabel(game))
+	GAccessor.text(game.gui[:scorelabel],pointslabel(game))
 end
 function drawboard(game::Game)
 	ctx=getgc(game.board.c)
@@ -565,8 +571,12 @@ function zoom(game,factor)
 	game.board.sizemod*=factor
 	drawboard(game)
 end
-function pass(game)
-	game.colind=game.colind%game.colmax+1
+function pass!(game,nomax::Bool=false)
+	max=game.colmax
+	if nomax
+		max=length(game.colors)
+	end
+	game.colind=game.colind%max+1
 	game.color=game.colors[game.colind]
 	drawboard(game)
 end

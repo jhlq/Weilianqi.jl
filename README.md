@@ -13,6 +13,6 @@ using Weilianqi
 game=newgame("name");
 ```
 
-Type save(game) in console to save the game, loadgame("name") to load it.
+Type save(game) in console to save the game, loadgame("name") to load it. Savefiles are stored in ~/weilianqi/saves/ and the name can be changed with game.name="newname" or through the textbox when using the buttons.
 
 What is the main objective? There are many! One is to figure out how the scoring system works! Another to create pretty formations. A most important goal is to have fun!

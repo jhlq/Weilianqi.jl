@@ -9,7 +9,7 @@ type Unit
 	groundlevel::Bool
 	live!::Function
 	baselife::Number
-	harvest!::Function
+	harvest::Function
 	name::String
 	costfun::Function
 	canspawn::Bool
