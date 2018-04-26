@@ -124,7 +124,7 @@ function getgroup(game,unit::Unit,color=-1,connectedunits=Unit[]) #why don't whi
 		push!(connectedunits,unit)
 	end
 	cwhite=Unit[]
-	if color==(1,1,1) #this needs to be rewritten to allow colored spawns
+	if color==(1,1,1) #this needs to be rewritten to allow colored spawns, sorta works now but... nonbody groups autojoin white group
 		push!(cwhite,unit)
 		stuff=Dict()
 		reach=makegrid(7) #should be minimum twice the maximum ir of all units +1
@@ -195,7 +195,8 @@ function getgroup(game,unit::Unit,color=-1,connectedunits=Unit[]) #why don't whi
 		end
 		temp=temp2
 	end
-	return newgroup(cwhite,connectedunits)
+	body=getcellgroup(game,connectedunits[1])
+	return newgroup(cwhite,body,connectedunits)
 end
 function samegroup(group1::Group,group2::Group)
 	for unit in group1.units
