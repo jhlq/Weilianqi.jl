@@ -112,26 +112,12 @@ function placeseq!(game)
 			expandboard!(game,entry[2]...,false)
 		end
 	end
-#=
-	for unit in game.sequence
-		if game.map[unit.loc]!=0
-		else
-			placeunit!(game,unit)
-		end
-#		if unit.canspawn
-#			push!(game.spawns,unit)
-#		end
-#		game.map[loc]=unit
-	end
-=#
 end
-function getgroup(game,unit::Unit,color=-1,connectedunits=Unit[],lifemap=-1) #why don't white units get added to spawns? Maybe they shouldn't, bug in our favor. They should be available as partial spawns, divide white into 3 spawn units
+function getgroup(game,unit::Unit,color=-1,connectedunits=Unit[]) #why don't white units get added to spawns? Maybe they shouldn't, bug in our favor. They should be available as partial spawns, divide white into 3 spawn units. Fixed some stuff, still good bugs?
 	if color==-1
 		color=unit.color
 	end
-#	if lifemap==-1
-		lifemap=unitslive(game,unit.color)
-#	end
+	lifemap=unitslive(game,unit.color)
 	if !in(unit,connectedunits)
 		push!(connectedunits,unit)
 	end
@@ -139,42 +125,32 @@ function getgroup(game,unit::Unit,color=-1,connectedunits=Unit[],lifemap=-1) #wh
 	if color==(1,1,1)
 		push!(cwhite,unit)
 		stuff=Dict()
-		reach=makegrid(7)
+		reach=makegrid(7) #should be minimum twice the maximum ir of all units +1
 		for lo in reach
 			loc=lo.+(unit.loc.-(0,0,2))
 			if !in(loc,keys(game.map))
 				continue
 			end
 			u=game.map[loc]
-			if isa(u,Unit) && !haskey(stuff,u.color) && !in(u,connectedunits) && u.color!=(1,1,1)
-				subgroup=getgroup(game,u,u.color,connectedunits)#,lifemap)
+			if isa(u,Unit) && distance(u.loc,unit.loc)<(u.ir+unit.ir+2) && !haskey(stuff,u.color) && !in(u,connectedunits) && u.color!=(1,1,1)
+				subgroup=getgroup(game,u,u.color,connectedunits)
 				if in(unit,subgroup.spawns)
 					stuff[u.color]=subgroup
 				end
-				#lmu=lifluence(game,u)
-				#if in(unit,lmu[3])
-				#	stuff[u.color]=lmu
-				#end
 			end
 		end
 		for (col,sg) in stuff
-			#for l in lm[1]
-			#	if !in(l,ulocs)
-			#		push!(ulocs,l)
-			#	end
-			#end
-			for cu in sg.units #lm[2]
+			for cu in sg.units 
 				if !in(cu,connectedunits)
 					push!(connectedunits,cu)
 				end
 			end
-			for cw in sg.spawns #lm[3]
+			for cw in sg.spawns
 				if !in(cw,cwhite)
 					push!(cwhite,cw)
 				end
 			end
 		end
-		#return (group,connectedunits,cwhite)
 		return newgroup(cwhite,connectedunits)
 	end
 	ulocs=[unit.loc]
@@ -193,7 +169,7 @@ function getgroup(game,unit::Unit,color=-1,connectedunits=Unit[],lifemap=-1) #wh
 							for adjwu in adjacent(u.loc)
 								adju=game.map[adjwu]
 								if isa(adju,Unit) && adju.color==color && !in(adju,connectedunits)
-									nsg=getgroup(game,adju,color,connectedunits)#,lifemap)
+									nsg=getgroup(game,adju,color,connectedunits)
 									for cu in nsg.units 
 										if !in(cu,connectedunits)
 											push!(connectedunits,cu)
@@ -216,7 +192,6 @@ function getgroup(game,unit::Unit,color=-1,connectedunits=Unit[],lifemap=-1) #wh
 		end
 		temp=temp2
 	end
-#	return (group,connectedunits,cwhite)
 	return newgroup(cwhite,connectedunits)
 end
 function samegroup(group1::Group,group2::Group)
@@ -227,17 +202,15 @@ function samegroup(group1::Group,group2::Group)
 	end
 	return true
 end
-function updategroups!(game::Game) #sometimes doesn't find most recent unit..? Or is there an issue when deleting units?
+function updategroups!(game::Game) #sometimes doesn't find most recent unit..? Or is there an issue when deleting units? Maybe fixed
 	groups=Group[]
 	for spawn in game.spawns
 		push!(groups,getgroup(game,spawn))
 	end
 	unique=Group[groups[1]]
 	for group in groups
-		#notin=true
 		for uniq in unique
 			if samegroup(group,uniq)
-				#notin=false
 				break
 			end
 			push!(unique,group)
@@ -287,6 +260,7 @@ function allunitslive!(game)
 	game.lifemap=lifemap
 	return lifemap
 end
+lifemap=allunitslive! #maybe not store lifemap in game since it gets modified in so many places. Rewrite everything to work with a temp lifemap
 function getpoints!(game,unit,loc,distance)
 	l=game.lifemap[loc]
 	lif=distance==0?unit.baselife:(unit.baselife/6/distance)
@@ -306,11 +280,6 @@ function getpoints!(game,unit,loc,distance)
 		h=min(l[ci],lif,1)
 		points[1]=h
 		l[ci]-=h
-#		if h>=1
-#			game.lifemap[loc][ci]=0
-#		else
-##			game.lifemap[loc][ci]=(1-h)
-#		end
 	else
 		lifc=lif.*unit.color
 		for c in 1:3
@@ -332,7 +301,6 @@ function unitharvest(game,unit)
 	end
 
 	white=(1,1,1)
-	#lifemap[hex]+=unit.baselife.*unit.color
 	points+=getpoints!(game,unit,unit.loc,0)
 	temp=[unit.loc]
 	checked=[unit.loc]
@@ -341,7 +309,6 @@ function unitharvest(game,unit)
 		for t in temp
 			for h in adjacent(t,1,unit.groundlevel)
 				if !in(h,temp) &&!in(h,checked) && in(h,game.board.grid) 
-#					lif=(unit.baselife/6/rad).*unit.color
 					if game.map[h]==0 || unit.passover
 						points+=getpoints!(game,unit,h,rad)
 						push!(temp2,h)
@@ -355,9 +322,6 @@ function unitharvest(game,unit)
 				push!(checked,h)
 			end
 		end
-#		for (h2,i2) in temp2
-#			lifemap[h2].+=i2
-#		end
 		temp=temp2
 	end
 	return points
@@ -587,10 +551,6 @@ function center(game,hex)
 	loc=hex_to_pixel(hex[1],hex[2],game.board.size)
 	game.board.offsetx=-loc[1]+getproperty(game.gui[:xadj],:value,Float64)
 	game.board.offsety=-loc[2]+getproperty(game.gui[:yadj],:value,Float64)
-	#game.board.panx=0#-getproperty(game.gui[:xadj],:value,Float64)
-	#game.board.pany=0
-	
-#	setproperty!(game.gui[:yadj],:value,0)
 	drawboard(game)
 	return true
 end

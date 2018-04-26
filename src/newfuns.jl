@@ -244,36 +244,17 @@ function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=["
 		if exists
 			if game.delete==true && game.map[hex]!=0 && isa(game.map[hex],Unit)
 				removeunit!(game,game.map[hex])
-#				game.map[hex]=0
-#				push!(game.sequence,(hex,0))
-			elseif game.map[hex]==0 && placeable(game,nu) #allowedat(game.unitparams,hex)
-			#	cost=unitcost(game,hex,game.unitparams)
-			#	afforded=subtractcost(game,cost,game.unitparams[1])
-			#	if !afforded
-			#		if game.autoharvest
-			#			harvest!(game)
-			#			afforded=subtractcost(game,cost,game.unitparams[1])
-			#		end
-			#		if !afforded
-			#			println("Not enough points.")
-			#			return
-			#		end
-			#	end
-				#nu=newunit(game.unitparams...)
-				#nu=newunit(game.color,hex,units[game.unitparams[4]])
-				#game.map[hex]=nu
-				#push!(game.sequence,(hex,nu))
+			elseif game.map[hex]==0 && placeable(game,nu) 
 				placeunit!(game,nu)
 				if !game.colock
 					game.colind=game.colind%game.colmax+1
 					game.color=game.colors[game.colind]
-					#game.unitparams[1]=game.color
 				end
 			end
 			if game.printscore
 				printpoints(game)
 			end
-			GAccessor.text(scorelabel,pointslabel(game))
+			#GAccessor.text(scorelabel,pointslabel(game))
 			updategroups!(game)
 		end
 		drawboard(game,ctx,w,h)
