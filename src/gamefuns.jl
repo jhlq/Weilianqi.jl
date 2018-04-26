@@ -483,21 +483,31 @@ function drawboard(game,ctx,w,h)
 			hexlines(ctx,x+w/2+offx,y+h/2+offy,size)
 		end
 	end
-	for move in game.map
-		if move[2]!=0
-			set_source_rgb(ctx,move[2].color...)
-			offset=(offx,offy)
-			if move[1][3]==1
-				offset=offset.+(-cos(pi/6)*size,sin(pi/6)*size)
-			elseif move[1][3]==3
-				offset=offset.+(-cos(pi/6)*size,-sin(pi/6)*size)
+	for unit in game.units
+		set_source_rgb(ctx,unit.color...)
+		offset=(offx,offy)
+		if unit.loc[3]==1
+			offset=offset.+(-cos(pi/6)*size,sin(pi/6)*size)
+		elseif unit.loc[3]==3
+			offset=offset.+(-cos(pi/6)*size,-sin(pi/6)*size)
+		end
+		loc=hex_to_pixel(unit.loc[1],unit.loc[2],size)
+		floc=(loc[1]+offset[1]+w/2,loc[2]+offset[2]+h/2)
+		rad=size*0.866/2
+		arc(ctx,floc[1],floc[2],rad, 0, 2pi) #why isn't the circle radius the distance between locs?
+		fill(ctx)
+		#set_source_rgb(ctx,game.board.gridcolor...) #border
+		#arc(ctx, loc[1]+offset[1]+w/2, loc[2]+offset[2]+h/2, size/3, 0, 2pi)
+		#stroke(ctx)
+		if !isempty(unit.graphic)
+			set_source_rgb(ctx,game.board.bgcolor...)
+			gra=[(0.5,0.5),(-0.5,0.5),(0,-0.5)]
+			points=Point[]
+			for p in unit.graphic
+				push!(points,Point(floc[1]+rad*p[1],floc[2]+rad*p[2]))
 			end
-			loc=hex_to_pixel(move[1][1],move[1][2],size)
-			arc(ctx, loc[1]+offset[1]+w/2, loc[2]+offset[2]+h/2, size*0.866/2, 0, 2pi) #why isn't the circle radius the distance between locs?
+			polygon(ctx,points)
 			fill(ctx)
-			#set_source_rgb(ctx,game.board.gridcolor...)
-			#arc(ctx, loc[1]+offset[1]+w/2, loc[2]+offset[2]+h/2, size/3, 0, 2pi)
-			#stroke(ctx)
 		end
 	end
 	#showall(game.board.win)

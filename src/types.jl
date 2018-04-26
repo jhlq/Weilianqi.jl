@@ -14,6 +14,8 @@ type Unit
 	costfun::Function
 	canspawn::Bool
 	harvested::Bool
+	graphic::Array #of vertices (x,y) where x is distance in radians from origin
+	extra #for arbitrary functionality
 end
 type Group
 	spawns

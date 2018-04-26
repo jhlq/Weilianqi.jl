@@ -11,7 +11,9 @@ function newunit(color=(1,0,0),loc=(0,0,Inf),unitspec::Dict=Dict())
 	name=haskey(unitspec,:name)?unitspec[:name]:""
 	costfun=haskey(unitspec,:costfun)?unitspec[:costfun]:standard_costfun
 	canspawn=haskey(unitspec,:canspawn)?unitspec[:canspawn]:false
-	return Unit(color,ir,pl,passover,passoverself,inclusive,loc,groundlevel,live,baselife,harvest,name,costfun,canspawn,false)
+	graphic=haskey(unitspec,:graphic)?unitspec[:graphic]:[]
+	extra=haskey(unitspec,:extra)?unitspec[:extra]:Void
+	return Unit(color,ir,pl,passover,passoverself,inclusive,loc,groundlevel,live,baselife,harvest,name, costfun,canspawn,false,graphic,extra)
 end
 function newunit(dic::Dict)
 	unitspec=units[dic[:name]]
