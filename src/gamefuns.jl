@@ -19,7 +19,7 @@ end
 
 function getcellgroup(game,unit::Unit)
 	white=(1,1,1)
-	group=[unit]
+	cellgroup=[unit]
 	if unit.color==white 
 		adju=adjacent(game,unit)
 		for u in adju
@@ -30,16 +30,18 @@ function getcellgroup(game,unit::Unit)
 				end
 			end
 		end
-		return group
+		return cellgroup
 	end
 	temp=[unit]
 	while !isempty(temp)
 		temp2=Unit[]
 		for t in temp
 			for h in adjacent(t.loc)
-				tu=game.map[h]
-				if !in(tu,cellgroup) && !in(tu,temp) && !in(tu,temp2) && isa(tu,Unit) && (tu.color==unit.color || tu.color==white)
-					push!(temp2,tu)
+				if in(h,keys(game.map))
+					tu=game.map[h]
+					if !in(tu,cellgroup) && !in(tu,temp) && !in(tu,temp2) && isa(tu,Unit) && (tu.color==unit.color || tu.color==white)
+						push!(temp2,tu)
+					end
 				end
 			end
 		end
@@ -113,7 +115,7 @@ function placeseq!(game)
 		end
 	end
 end
-function getgroup(game,unit::Unit,color=-1,connectedunits=Unit[]) #why don't white units get added to spawns? Maybe they shouldn't, bug in our favor. They should be available as partial spawns, divide white into 3 spawn units. Fixed some stuff, still good bugs?
+function getgroup(game,unit::Unit,color=-1,connectedunits=Unit[]) #why don't white units get added to spawns? Maybe they shouldn't, bug in our favor. They should be available as partial spawns, divide white into 3 spawn units. Fixed some stuff, still good bugs? Well, this should be rewritten rather than bugged down, first a initgroup that gets the body.
 	if color==-1
 		color=unit.color
 	end
@@ -122,7 +124,7 @@ function getgroup(game,unit::Unit,color=-1,connectedunits=Unit[]) #why don't whi
 		push!(connectedunits,unit)
 	end
 	cwhite=Unit[]
-	if color==(1,1,1)
+	if color==(1,1,1) #this needs to be rewritten to allow colored spawns
 		push!(cwhite,unit)
 		stuff=Dict()
 		reach=makegrid(7) #should be minimum twice the maximum ir of all units +1
@@ -151,7 +153,8 @@ function getgroup(game,unit::Unit,color=-1,connectedunits=Unit[]) #why don't whi
 				end
 			end
 		end
-		return newgroup(cwhite,connectedunits)
+		body=getcellgroup(game,cwhite[1])
+		return newgroup(cwhite,body,connectedunits)
 	end
 	ulocs=[unit.loc]
 	temp=[unit.loc]
@@ -285,7 +288,7 @@ function getpoints!(game,unit,loc,distance)
 		for c in 1:3
 			if lifc[c]>0
 				points[c+1]+=min(lifc[c],l[c%3+1])
-				game.lifemap[loc][c%3+1]-=points[c+1]
+				game.lifemap[loc][c%3+1]-=points[c+1] #problem? *trollface*
 			end
 		end
 		if numcolors(l)==1
@@ -313,10 +316,10 @@ function unitharvest(game,unit)
 						points+=getpoints!(game,unit,h,rad)
 						push!(temp2,h)
 					elseif unit.passoverself && (game.map[h].color==unit.color || game.map[h].color==white)
-						points+=getpoints!(game,unit,h,rad)
+						points+=getpoints!(game,unit,h,rad) #problem!
 						push!(temp2,h)
 					elseif unit.inclusive && game.map[h]!=0
-						points+=getpoints!(game,unit,h,rad)
+						points+=getpoints!(game,unit,h,rad) #*seriousface* solving by deprecating game.lifemap
 					end
 				end
 				push!(checked,h)
@@ -333,7 +336,9 @@ end
 function checkharvest(game,group::Group)
 	points=[0.0,0,0,0,0]
 	for unit in group.units
-		if unit!=0
+		if !in(unit,group.body) #unit!=0
+			points.+=checkharvest(game,unit)./3
+		else 
 			points.+=checkharvest(game,unit)
 		end
 	end

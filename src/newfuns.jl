@@ -18,15 +18,17 @@ function newunit(dic::Dict)
 	return newunit(dic[:color],dic[:loc],unitspec)
 end
 function newgroup(unit::Unit)
+	body=[unit]
 	units=[unit]
 	spawns=Unit[]
 	if unit.canspawn
 		push!(spawns,unit)
 	end
-	group=Group(spawns,units,[0.0,0,0,0,0],false,false)
+	group=Group(spawns,body,units,[0.0,0,0,0,0],false)
 	#group.lifmap=lifmap(group)
 	return group
 end
+
 function newgroup(units::Array{Unit})
 	spawns=Unit[]
 	for u in units
@@ -34,13 +36,21 @@ function newgroup(units::Array{Unit})
 			push!(spawns,u)
 		end
 	end
-	group=Group(spawns,units,[0.0,0,0,0,0],false,false)
+	body=Unit[]
+	if !isempty(spawns)
+		body=getcellgroup(spawns[1])
+	end
+	group=Group(spawns,body,units,[0.0,0,0,0,0],false)
 	#group.lifmap=lifmap(group)
 	return group
 end
-function newgroup(spawns::Array,units::Array)
-	return Group(spawns,units,[0.0,0,0,0,0],false,false)
+function newgroup(spawns::Array,units::Array) #deprecated
+	return Group(spawns,Unit[],units,[0.0,0,0,0,0],false)
 end
+function newgroup(spawns::Array,body::Array,units::Array)
+	return Group(spawns,body,units,[0.0,0,0,0,0],false)
+end
+
 function newboard(shells=6,initlocs=[(0,0,2)],grid=0,c=@GtkCanvas(),sizemod=5,size=30,offsetx=0,offsety=0,bgcolor=(0,0,0),gridcolor=(1/2,1/2,1/2),expandbasecost=-1)
 	if grid==0
 		grid=makegrid(shells,initlocs)

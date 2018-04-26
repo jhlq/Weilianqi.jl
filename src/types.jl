@@ -17,10 +17,11 @@ type Unit
 end
 type Group
 	spawns
+	body
 	units
 	#lifmap
 	points
-	allowdebt::Bool
+	#allowdebt::Bool
 	harvested::Bool
 end
 type Board
@@ -54,12 +55,12 @@ type Game
 	sequence::Array{Any} #Tuple{Tuple{Int64,Int64,Int64},Any},1} #placed units and performed harvests/expands
 	board::Board
 	printscore::Bool
-	points
+	points #not used anymore
 	season::Integer #number of harvests
 	win #GtkWindow
 	window #initial aspect ratio
-	lifemap
+	lifemap #deprecated
 	g #GtkGrid
 	gui::Dict #Gtk placeholder
-	autoharvest::Bool
+	autoharvest::Bool #costs have been removed so no longer relevant, return to the source
 end
