@@ -264,48 +264,74 @@ function allunitslive!(game)
 	game.lifemap=lifemap
 	return lifemap
 end
-lifemap=allunitslive! #maybe not store lifemap in game since it gets modified in so many places. Rewrite everything to work with a temp lifemap
-function getpoints!(game,unit,loc,distance)
-	l=game.lifemap[loc]
+#lifemap=allunitslive! #maybe not store lifemap in game since it gets modified in so many places. Rewrite everything to work with a temp lifemap. Or rather have a solid lifemap and a temp harvest ledger
+function lifemap(game)
+	lifemap=Dict()
+	for loc in game.board.grid
+		lifemap[loc]=[0.0,0,0]
+	end
+	for unit in game.units
+		unit.live!(game,unit,lifemap)
+	end
+	return lifemap
+end
+function newledger(game)
+	ledger=Dict()
+	for loc in game.board.grid
+		ledger[loc]=[[0.0,0,0],0.0,0,0,0]
+	end
+	return ledger
+end
+function getpoints!(game,unit,loc,distance,ledger)
+	llm=game.lifemap[loc] #local lifemap
+	ll=ledger[loc]
 	lif=distance==0?unit.baselife:(unit.baselife/6/distance)
-	ncol=numcolors(l)
-	points=[0.0,0,0,0,0]
-	if ncol==3
+	ncol=numcolors(llm)
+	l=llm.-ll[5]
+	ncoll=numcolors(l)
+	points=[[0.0,0,0],0.0,0,0,0]
+	if ncol==3 && ncoll==3
 		points[5]=min(min(l...),lif)
-		l.-=points[5]
+		#l.-=points[5]
+		ll.+=points
 		lif-=points[5]
 		if numcolors(l)==1
 			l[1]=0;l[2]=0;l[3]=0
 		end
+		l=llm.-ll[5]
 	end
-	if ncol==1 && game.map[loc]==0
+	if ncol==1 && game.map[loc]==0 && sum(ll[1])<1
 		ci=l[1]==0?(l[2]==0?3:2):1
 		if l[ci]>1;l[ci]=1;end
 		h=min(l[ci],lif,1)
-		points[1]=h
-		l[ci]-=h
+		points[1]=points[1].+h.*unit.color
+#if points[1][1]!=0;println(points[1],loc,l,llm);end #useful for debugging
+		#l[ci]-=h
+		ll[1]=ll[1]+points[1]
 	else
+		l=l-ll[2:4]
 		lifc=lif.*unit.color
 		for c in 1:3
 			if lifc[c]>0
 				points[c+1]+=min(lifc[c],l[c%3+1])
-				game.lifemap[loc][c%3+1]-=points[c+1] #problem? *trollface*
+				#game.lifemap[loc][c%3+1]-=points[c+1] #problem? *trollface* Solved!
+				ll[c+1]+=points[c+1]
 			end
 		end
-		if numcolors(l)==1
-			l=[0,0,0]
-		end
+		#if numcolors(l)==1
+		#	l=[0,0,0]
+		#end
 	end
 	return points
 end
-function unitharvest(game,unit)
-	points=[0.0,0,0,0,0]
+function unitharvest(game,unit,ledger)
+	points=[[0.0,0,0],0.0,0,0,0]
 	if unit.harvested
 		return points
 	end
 
 	white=(1,1,1)
-	points+=getpoints!(game,unit,unit.loc,0)
+	points.+=getpoints!(game,unit,unit.loc,0,ledger)
 	temp=[unit.loc]
 	checked=[unit.loc]
 	for rad in 1:unit.ir
@@ -314,13 +340,14 @@ function unitharvest(game,unit)
 			for h in adjacent(t,1,unit.groundlevel)
 				if !in(h,temp) &&!in(h,checked) && in(h,game.board.grid) 
 					if game.map[h]==0 || unit.passover
-						points+=getpoints!(game,unit,h,rad)
+						p=getpoints!(game,unit,h,rad,ledger)
+						points.+=p
 						push!(temp2,h)
 					elseif unit.passoverself && (game.map[h].color==unit.color || game.map[h].color==white)
-						points+=getpoints!(game,unit,h,rad) #problem!
+						points.+=getpoints!(game,unit,h,rad,ledger) #problem!
 						push!(temp2,h)
 					elseif unit.inclusive && game.map[h]!=0
-						points+=getpoints!(game,unit,h,rad) #*seriousface* solving by deprecating game.lifemap
+						points.+=getpoints!(game,unit,h,rad,ledger) #*seriousface* solving by deprecating game.lifemap. No! Long live the lifemap+ledger union
 					end
 				end
 				push!(checked,h)
@@ -331,16 +358,17 @@ function unitharvest(game,unit)
 	return points
 end
 
-function checkharvest(game,unit::Unit)
-	return unit.harvest(game,unit)
+function checkharvest(game,unit::Unit,ledger)
+	return unit.harvest(game,unit,ledger)
 end
-function checkharvest(game,group::Group)
-	points=[0.0,0,0,0,0]
+function checkharvest(game,group::Group,ledger)
+	points=[[0.0,0,0],0.0,0,0,0]
 	for unit in group.units
-		if !in(unit,group.body) #unit!=0
-			points.+=checkharvest(game,unit)./3
+		p=checkharvest(game,unit,ledger)
+		if !in(unit,group.body)
+			points.+=p./3
 		else 
-			points.+=checkharvest(game,unit)
+			points.+=p
 		end
 	end
 	return points
@@ -348,11 +376,23 @@ end
 function checkharvest(game::Game)
 	#game=deepcopy(game) #this is silly, remove ! from unit.harvest! Done, still updates lifemap thou. 
 	updategroups!(game) #this shouldn't count as modifying the state of the game since if they arent correct the state is incorrect and should always be updated
-	allunitslive!(game)
-	points=[0.0,0,0,0,0]
+	#allunitslive!(game)
+	game.lifemap=lifemap(game)
+	ledger=newledger(game)
+	points=[[0.0,0,0],0.0,0,0,0]
 	for group in game.groups
-		points+=checkharvest(game,group)
+		points+=checkharvest(game,group,ledger)
+#		group.harvested=true
+#		for unit in group.units
+#			unit.harvested=true
+#		end
 	end
+#	for group in game.groups
+#		group.harvested=false
+#		for unit in group.units
+#			unit.harvested=false
+#		end
+#	end	#may need to do this to avoid units in multiple groups to multiharvest, but can't do it now because it should harvest to the group where it is in the body
 	return points
 end
 function harvest!(game,group::Group)
@@ -415,17 +455,20 @@ function bonds(game)
 	return Int(nc/2)
 end
 function pointslabel(game)
-	points=round.(checkharvest(game),1)
+	points=checkharvest(game)
+	bp=round.(points[1],1)
+	points[1]=0
+	points=round.(points,1)
+	return "Points!\nLite:\nRed\t$(bp[1])\nGreen\t$(bp[2])\nBlue\t$(bp[3])\nLife:\nRed\t$(points[2])\nGreen\t$(points[3])\nBlue\t$(points[4])\nLight: $(points[5])"
+end
+function infolabel(game)
 	rgb=[0,0,0]
 	for unit in game.units
 		rgb.+=unit.color
 	end
-	return "Points!\nBlack:\t$(points[1])\nRed:\t$(points[2])\nGreen:\t$(points[3])\nBlue:\t$(points[4])\nWhite: $(points[5])\nInformation!\nUnits: $(length(game.units))\nRed: $(rgb[1])\nGreen: $(rgb[2])\nBlue: $(rgb[3])\nBonds: $(bonds(game))"
+	return "Information!\nUnits: $(length(game.units))\nRed: $(rgb[1])\nGreen: $(rgb[2])\nBlue: $(rgb[3])\nBonds: $(bonds(game))"
 end
-
 function undo!(game) #wont undo captures? Maybe when reloading sequence. There aren't captures anymore. Wont undo board expansions
-#	hex=pop!(game.sequence)
-#	game.map[hex[1]]=0
 	removeunit!(game.units[end])
 	if !game.colock
 		game.colind-=1
@@ -502,7 +545,6 @@ function drawboard(game,ctx,w,h)
 		#stroke(ctx)
 		if !isempty(unit.graphic)
 			set_source_rgb(ctx,game.board.bgcolor...)
-			gra=[(0.5,0.5),(-0.5,0.5),(0,-0.5)]
 			points=Point[]
 			for p in unit.graphic
 				push!(points,Point(floc[1]+rad*p[1],floc[2]+rad*p[2]))
@@ -514,6 +556,7 @@ function drawboard(game,ctx,w,h)
 	#showall(game.board.win)
 	reveal(game.board.c)
 	GAccessor.text(game.gui[:scorelabel],pointslabel(game))
+	GAccessor.text(game.gui[:newslabel],infolabel(game))
 end
 function drawboard(game::Game)
 	ctx=getgc(game.board.c)
@@ -524,27 +567,16 @@ end
 
 function expandboard!(game::Game,shells::Integer=6,initlocs=[(6,6,2)],basecost=-1,reveal=true)
 	patch=makegrid(shells,initlocs)
-#	basecost=game.board.expandbasecost
-#	if basecost==-1
-#		for iloc in initlocs
-#			basecost+=distance(iloc)*10 #should be distance from spawn
-#		end
-#	end
-#	cost=length(patch)+basecost*length(initlocs)
-#	remains=game.points[1]-cost
-#	if remains>=0
-		for loc in patch
-			if !in(loc,keys(game.map))
-				game.map[loc]=0
-				push!(game.board.grid,loc)
-			end
+	for loc in patch
+		if !in(loc,keys(game.map))
+			game.map[loc]=0
+			push!(game.board.grid,loc)
 		end
-#		game.points[1]=remains
-		push!(game.sequence,(:expand,[shells,initlocs,basecost]))
-		if reveal
-			drawboard(game)
-		end
-#	end
+	end
+	push!(game.sequence,(:expand,[shells,initlocs,basecost]))
+	if reveal
+		drawboard(game)
+	end
 	return "<3"
 end
 function zoom(game,factor)

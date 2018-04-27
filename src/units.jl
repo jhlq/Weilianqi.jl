@@ -27,8 +27,8 @@ end
 function standard_live!(game,unit,lifemap)
 	spreadlife!(game,unit,lifemap)
 end
-function standard_harvest(game,unit)
-	unitharvest(game,unit)
+function standard_harvest(game,unit,ledger)
+	unitharvest(game,unit,ledger)
 end
 standard_harvest! =standard_harvest #for savefile backwardscompat
 

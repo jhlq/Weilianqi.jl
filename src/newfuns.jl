@@ -69,7 +69,6 @@ function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=["
 		map[loc]=0
 	end
 	game=Game(name,map,Group[],Unit[],Unit[],unitparams,color,colors,colind,colmax, colock,delete,sequence,board,printscore,points,season,win,window,0,0,Dict(),autoharvest)
-	#placeseq(game.sequence,game.map)
 	placeseq!(game)	
 	updategroups!(game)
 	if win==0
@@ -79,6 +78,7 @@ function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=["
 		nameentry=GtkEntry()
 		setproperty!(nameentry,:text,game.name)
 		scorelabel=GtkLabel(pointslabel(game))
+		newslabel=GtkLabel(infolabel(game))
 		passbtn=GtkButton("Next color")
 		#colabel=GtkLabel(string(game.color))
 		#autoharvestcheck = GtkCheckButton("Autoharvest")
@@ -130,13 +130,14 @@ function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=["
 		g[2,1]=nameentry
 		g[3,1]=loadbtn
 		g[1,2]=scorelabel
-		g[2,3]=deletecheck
+		g[2,2]=newslabel
+		g[2,4]=deletecheck
 		g[1,3]=passbtn
 		#g[1,4]=autoharvestcheck
-		g[2,2]=colockcheck
-		g[1,4]=clabel1
-		g[3,4]=clabel2
-		g[2,4]=unitscombo
+		g[2,3]=colockcheck
+		g[1,5]=clabel1
+		g[3,5]=clabel2
+		g[2,5]=unitscombo
 		g[1,6]=zlabel
 		g[1,7]=xlabel
 		g[1,8]=ylabel
@@ -156,6 +157,7 @@ function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=["
 		game.g=g
 		#game.gui[:harvestbtn]=harvestbtn
 		game.gui[:scorelabel]=scorelabel
+		game.gui[:newslabel]=newslabel
 		game.gui[:yoscale]=yoscale
 		game.gui[:xoscale]=xoscale
 		game.gui[:zadj]=zadj
