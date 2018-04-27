@@ -299,7 +299,7 @@ function newledger(game)
 	end
 	return ledger
 end
-function getpoints!(game,unit,loc,distance,ledger)
+function getpoints!(game,unit,loc,distance,ledger) #remake cleaner
 	llm=game.lifemap[loc] #local lifemap
 	ll=ledger[loc]
 	lif=distance==0?unit.baselife:(unit.baselife/6/distance)
