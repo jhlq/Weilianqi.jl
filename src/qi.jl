@@ -2,28 +2,6 @@ include("units.jl")
 include("gamefuns.jl")
 include("newfuns.jl")
 
-function placeable(game,unit::Unit)
-	if game.map[unit.loc]!=0
-		return false
-	elseif !in(unit.loc[3],unit.pl)
-		return false
-	end
-	return true
-end
-#function allowedat(unitparams,loc)
-#	yes=true
-#	if !in(loc[3],unitparams[3])
-#		yes=false
-#	end
-#	return yes
-#end
-
-
-function getexpandcost(shells::Integer=6,initlocs=[(6,6,2)],basecost=50)
-	patch=makegrid(shells,initlocs)
-	cost=length(patch)+basecost*length(initlocs)
-	return cost
-end
 function distance(loc1,loc2=(0,0,2))
 	oloc=loc1.-loc2
 	m=max(abs(oloc[1]),abs(oloc[2]))
@@ -121,3 +99,9 @@ function loadgame(name::String,backtrack::Integer=0)
 	end
 	return game	
 end
+function getexpandcost(shells::Integer=6,initlocs=[(6,6,2)],basecost=50) #deprecated
+	patch=makegrid(shells,initlocs)
+	cost=length(patch)+basecost*length(initlocs)
+	return cost
+end
+

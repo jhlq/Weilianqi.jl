@@ -222,9 +222,16 @@ function updategroups!(game::Game) #sometimes doesn't find most recent unit..? O
 	end
 	game.groups=unique	
 end
-
+function placeable(game,unit::Unit)
+	if game.map[unit.loc]!=0
+		return false
+	elseif !in(unit.loc[3],unit.pl)
+		return false
+	end
+	return true
+end
 function placeunit!(game,unit)
-	if game.map[unit.loc]==0
+	if placeable(game,unit)#game.map[unit.loc]==0
 		game.map[unit.loc]=unit
 		if !in(unit,game.sequence) 
 			push!(game.sequence,unit)
@@ -238,15 +245,25 @@ function placeunit!(game,unit)
 	end
 	return "<3"
 end
+function findunit(unit::Unit,units)
+	i=0
+	for u in units
+		i+=1
+		if unit.loc==u.loc && unit.color==u.color && unit.name==u.name
+			return i
+		end
+	end
+	return 0
+end
 function removeunit!(game,unit::Unit)
 	game.map[unit.loc]=0
 	push!(game.sequence,(:delete,unit))
-	i=findfirst(u->u==unit,game.units)
+	i=findunit(unit,game.units)
 	if i>0
 		deleteat!(game.units,i)
 	end
 	if unit.canspawn
-		i=findfirst(u->u==unit,game.spawns)
+		i=findunit(unit,game.spawns)
 		deleteat!(game.units,i)
 	end
 	return "<3"
@@ -305,7 +322,6 @@ function getpoints!(game,unit,loc,distance,ledger)
 		if l[ci]>1;l[ci]=1;end
 		h=min(l[ci],lif,1)
 		points[1]=points[1].+h.*unit.color
-#if points[1][1]!=0;println(points[1],loc,l,llm);end #useful for debugging
 		#l[ci]-=h
 		ll[1]=ll[1]+points[1]
 	else
@@ -318,6 +334,7 @@ function getpoints!(game,unit,loc,distance,ledger)
 				ll[c+1]+=points[c+1]
 			end
 		end
+#if points[2]!=0;println(points[2],loc,l,llm);end #useful for debugging
 		#if numcolors(l)==1
 		#	l=[0,0,0]
 		#end
