@@ -123,11 +123,11 @@ function getgroup(game,unit::Unit,color=-1,connectedunits=Unit[]) #why don't whi
 	if !in(unit,connectedunits)
 		push!(connectedunits,unit)
 	end
-	cwhite=Unit[]
-	if color==(1,1,1) #this needs to be rewritten to allow colored spawns, sorta works now but... nonbody groups autojoin white group
+	cwhite=Unit[] #connected spawns
+	if color==(1,1,1) #this needs to be rewritten to allow colored spawns, sorta works now but... nonbody groups automerge with white group
 		push!(cwhite,unit)
 		stuff=Dict()
-		reach=makegrid(7) #should be minimum twice the maximum ir of all units +1
+		reach=makegrid(7) #should be minimum twice the maximum ir of all units +1, should be a better way
 		for lo in reach
 			loc=lo.+(unit.loc.-(0,0,2))
 			if !in(loc,keys(game.map))
@@ -195,7 +195,7 @@ function getgroup(game,unit::Unit,color=-1,connectedunits=Unit[]) #why don't whi
 		end
 		temp=temp2
 	end
-	body=getcellgroup(game,connectedunits[1])
+	body=getcellgroup(game,connectedunits[1]) #tempfix
 	return newgroup(cwhite,body,connectedunits)
 end
 function samegroup(group1::Group,group2::Group)
@@ -304,7 +304,7 @@ function getpoints!(game,unit,loc,distance,ledger)
 	ll=ledger[loc]
 	lif=distance==0?unit.baselife:(unit.baselife/6/distance)
 	ncol=numcolors(llm)
-	l=llm.-ll[5]
+	l=llm.-ll[5] #local life - harvest
 	ncoll=numcolors(l)
 	points=[[0.0,0,0],0.0,0,0,0]
 	if ncol==3 && ncoll==3
@@ -325,7 +325,10 @@ function getpoints!(game,unit,loc,distance,ledger)
 		#l[ci]-=h
 		ll[1]=ll[1]+points[1]
 	else
-		l=l-ll[2:4]
+		#l=l-ll[2:4] #something is wrong here... Aha! Green doesn't harvest green, green harvests blue!
+		l[1]-=ll[4]
+		l[2]-=ll[2]
+		l[3]-=ll[3]
 		lifc=lif.*unit.color
 		for c in 1:3
 			if lifc[c]>0
@@ -334,7 +337,7 @@ function getpoints!(game,unit,loc,distance,ledger)
 				ll[c+1]+=points[c+1]
 			end
 		end
-#if points[2]!=0;println(points[2],loc,l,llm);end #useful for debugging
+#if loc==(-1,1,2);println(lif,ll[2:4],l);end #useful for debugging
 		#if numcolors(l)==1
 		#	l=[0,0,0]
 		#end

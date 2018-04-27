@@ -7,7 +7,7 @@ function newunit(color=(1,0,0),loc=(0,0,Inf),unitspec::Dict=Dict())
 	groundlevel=haskey(unitspec,:groundlevel)?unitspec[:groundlevel]:true
 	live=haskey(unitspec,:live!)?unitspec[:live!]:spreadlife!
 	baselife=haskey(unitspec,:baselife)?unitspec[:baselife]:6
-	harvest=haskey(unitspec,:harvest)?unitspec[:harvest]:standard_harvest #(game,unit)->[0.0,0,0,0,0]
+	harvest=haskey(unitspec,:harvest)?unitspec[:harvest]:unitharvest #(game,unit)->[0.0,0,0,0,0]
 	name=haskey(unitspec,:name)?unitspec[:name]:""
 	costfun=haskey(unitspec,:costfun)?unitspec[:costfun]:standard_costfun
 	canspawn=haskey(unitspec,:canspawn)?unitspec[:canspawn]:false
@@ -61,7 +61,7 @@ function newboard(shells=6,initlocs=[(0,0,2)],grid=0,c=@GtkCanvas(),sizemod=5,si
 	return board
 end
 
-function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=["standard"],map=Dict(),unit=0,color=(1,0,0),colors=colorsets[1],colind=1,colmax=3,colock=false,delete=false,sequence=[newunit((1,1,1),(0,0,2),units["spawn"])],board=0,printscore=false,points=[0.0,0,0,0,0],season=0,win=0,window=(900,700),autoharvest=true)
+function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=["standard"],map=Dict(),unit=0,color=(1,0,0),colors=colorsets[1],colind=1,colmax=3,colock=false,delete=false,sequence=[newunit((1,1,1),(0,0,2),units["queen"])],board=0,printscore=false,points=[0.0,0,0,0,0],season=0,win=0,window=(900,700),autoharvest=true)
 	if board==0
 		board=newboard(boardparams...)
 	end
