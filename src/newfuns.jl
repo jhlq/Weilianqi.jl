@@ -80,6 +80,7 @@ function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=["
 		scorelabel=GtkLabel(pointslabel(game))
 		newslabel=GtkLabel(infolabel(game))
 		passbtn=GtkButton("Next color")
+		backbtn=GtkButton("Prev color")
 		#colabel=GtkLabel(string(game.color))
 		#autoharvestcheck = GtkCheckButton("Autoharvest")
 		#setproperty!(autoharvestcheck,:active,game.autoharvest)
@@ -133,6 +134,7 @@ function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=["
 		g[2,2]=newslabel
 		g[2,4]=deletecheck
 		g[1,3]=passbtn
+		g[1,4]=backbtn
 		#g[1,4]=autoharvestcheck
 		g[2,3]=colockcheck
 		g[1,5]=clabel1
@@ -177,6 +179,9 @@ function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=["
 		end
 		id = signal_connect(passbtn, "clicked") do widget
 			pass!(game,getproperty(colockcheck,:active,Bool))
+		end
+		id = signal_connect(backbtn, "clicked") do widget
+			pass!(game,getproperty(colockcheck,:active,Bool),true)
 		end
 		signal_connect(unitscombo, "changed") do widget, others...
 			unitname=Gtk.bytestring( GAccessor.active_text(unitscombo) ) 

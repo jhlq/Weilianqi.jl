@@ -62,8 +62,7 @@ function loadsequence!(game::Game,seq,originoffset=(0,0,0))
 	return true
 end
 function loadic(dic::Dict,originoffset=(0,0,0))
-	#haskey(dic,:shells)
-	#game.board=newboard(dic[:shells],dic[:initlocs])
+	#game.board=newboard(dic[:shells],dic[:initlocs]) #seeeegfault
 	game=newgame(dic[:name],[dic[:shells],dic[:initlocs]])
 	game.colind=dic[:colind]
 	game.color=game.colors[game.colind]
@@ -76,6 +75,7 @@ function loadic(dic::Dict,originoffset=(0,0,0))
 		if isa(entry,Dict)
 			unit=newunit(entry)
 			unit.loc=unit.loc.+originoffset
+			if unit.name=="spawn";unit.name="queen";end
 			placeunit!(game,unit)
 		elseif entry==:harvest
 			harvest!(game)

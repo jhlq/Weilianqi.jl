@@ -603,12 +603,19 @@ function zoom(game,factor)
 	game.board.sizemod*=factor
 	drawboard(game)
 end
-function pass!(game,nomax::Bool=false)
+function pass!(game,nomax::Bool=false,reverse::Bool=false)
 	max=game.colmax
 	if nomax
 		max=length(game.colors)
 	end
-	game.colind=game.colind%max+1
+	if reverse
+		game.colind=game.colind-1
+		if game.colind==0
+			game.colind=max
+		end
+	else
+		game.colind=game.colind%max+1
+	end
 	game.color=game.colors[game.colind]
 	drawboard(game)
 end

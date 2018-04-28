@@ -54,7 +54,7 @@ type Game
 	colmax::Integer #return to first color after max
 	colock::Bool #place a single color
 	delete::Bool #delete units (by clicking on them)
-	sequence::Array{Any} #Tuple{Tuple{Int64,Int64,Int64},Any},1} #placed units and performed (harvests/)expands/deletions
+	sequence::Array{Any} #placed units and performed (harvests/)expands/deletions
 	board::Board #changing this after game is initialized causes segfaults
 	printscore::Bool #who needs dis when we 'ave fancy labels
 	points #not used anymore
