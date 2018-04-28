@@ -1,3 +1,5 @@
+Stuff below is somewhat dated, devnotes.txt is more recent.
+
 text based setup -> start game screen
 	num players, board size, num white units, white unit spacing, scoring rules
 	terrain -> seasons

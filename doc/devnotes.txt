@@ -1,0 +1,9 @@
+Weilianqi is a board game that is part of a larger framework 3li: light life lite. The full game features tasks so complex that even quantum computers can only approximately approximate solutions and a major game flow is making industrial chains to build optical quantum computers that can solve in game or irl problems, it has been guaranteed that quantum algorithms built in game will be ran on actual quantum computers, or even 3D-printed! 
+
+Since it is a board game the score has to be calculateable without technological aids by a human brain, therefore it is necessarily simple and the app doesn't have that much room for development. Live playing and custom servers would be nice, already correspondence games can be played with git repositories!
+
+For unlimited contribution potential set your sights on the full game, a 3D terraformable world destined for virtual reality. In phase one which can be played through the app worlds are defined by playing and the colors can represent many things, from terrain to retina receptors. Phase 2 can continue in many ways, such as by building trees on surrounded terrain. So if red has completely enclosed an area they can decide what construction goes on there whereas if blue and green together surround an area they will have to collaborate, potentially more difficult but organisms of different colors carry symbiotic perks. 
+
+Connections determine how fast goods or information can flow between the colors, in the retina case the size of reds area determines how much red light can be gathered from the image and the strength of the connection to green determines how fast that information can be combined with green image details.
+
+Developing worlds by playing the game is essential. The layered hexagonal grid is like the structure of ice, make some snowflakes!
