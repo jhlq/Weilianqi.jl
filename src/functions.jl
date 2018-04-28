@@ -174,4 +174,20 @@ function hexlines(ctx,x,y,size)
 	rel_line_to(ctx,-size/2,size*sin(pi/3))
 	stroke(ctx)
 end
+function samegroup(group1::Group,group2::Group)
+	for unit in group1.body
+		if !in(unit,group2.body)
+			return false
+		end
+	end
+	return true
+end
+function hasgroup(grouparray,group::Group)
+	for g in grouparray
+		if samegroup(group,g)
+			return true
+		end
+	end
+	false
+end
 

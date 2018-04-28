@@ -95,14 +95,23 @@ function unitslive(game,color)
 	for loc in game.board.grid
 		lifemap[loc]=[0.0,0,0]	#this is sometimes redundant and sometimes needed...
 	end
-	for (loc,unit) in game.map
-		if isa(unit,Unit) && (color==(1,1,1) || unit.color==color || unit.color==(1,1,1))
+	for unit in game.units #rewrite this as below
+		if (color==(1,1,1) || unit.color==color || unit.color==(1,1,1)) #white, your superpowers are being removed, enjoy them while you can
 			unit.live!(game,unit,lifemap)
 		end
 	end
 	return lifemap
 end
-
+function unitslive(game)
+	lifemap=Dict()
+	for loc in game.board.grid
+		lifemap[loc]=[0.0,0,0]
+	end
+	for unit in game.units
+		unit.live!(game,unit,lifemap)
+	end
+	return lifemap
+end
 
 function placeseq!(game)
 	for entry in game.sequence
@@ -115,46 +124,16 @@ function placeseq!(game)
 		end
 	end
 end
-function getgroup(game,unit::Unit,color=-1,connectedunits=Unit[]) #why don't white units get added to spawns? Maybe they shouldn't, bug in our favor. They should be available as partial spawns, divide white into 3 spawn units. Fixed some stuff, still good bugs? Well, this should be rewritten rather than bugged down, first a initgroup that gets the body.
-	if color==-1
-		color=unit.color
-	end
+
+function getgroup(game,unit)
 	lifemap=unitslive(game,unit.color)
-	if !in(unit,connectedunits)
-		push!(connectedunits,unit)
-	end
-	cwhite=Unit[] #connected spawns
-	if color==(1,1,1) #this needs to be rewritten to allow colored spawns, sorta works now but... nonbody groups automerge with white group
-		push!(cwhite,unit)
-		stuff=Dict()
-		reach=makegrid(7) #should be minimum twice the maximum ir of all units +1, should be a better way
-		for lo in reach
-			loc=lo.+(unit.loc.-(0,0,2))
-			if !in(loc,keys(game.map))
-				continue
-			end
-			u=game.map[loc]
-			if isa(u,Unit) && distance(u.loc,unit.loc)<(u.ir+unit.ir+2) && !haskey(stuff,u.color) && !in(u,connectedunits) && u.color!=(1,1,1)
-				subgroup=getgroup(game,u,u.color,connectedunits)
-				if in(unit,subgroup.spawns)
-					stuff[u.color]=subgroup
-				end
-			end
+	connectedunits=[unit]
+	spawns=Unit[]
+	body=getcellgroup(game,unit)
+	for unit in body
+		if unit.canspawn
+			push!(spawns,unit)
 		end
-		for (col,sg) in stuff
-			for cu in sg.units 
-				if !in(cu,connectedunits)
-					push!(connectedunits,cu)
-				end
-			end
-			for cw in sg.spawns
-				if !in(cw,cwhite)
-					push!(cwhite,cw)
-				end
-			end
-		end
-		body=getcellgroup(game,cwhite[1])
-		return newgroup(cwhite,body,connectedunits)
 	end
 	ulocs=[unit.loc]
 	temp=[unit.loc]
@@ -167,25 +146,6 @@ function getgroup(game,unit::Unit,color=-1,connectedunits=Unit[]) #why don't whi
 					u=game.map[h]
 					if isa(u,Unit) && !in(u,connectedunits)
 						push!(connectedunits,u)
-						if u.color==(1,1,1)
-							push!(cwhite,u)
-							for adjwu in adjacent(u.loc)
-								adju=game.map[adjwu]
-								if isa(adju,Unit) && adju.color==color && !in(adju,connectedunits)
-									nsg=getgroup(game,adju,color,connectedunits)
-									for cu in nsg.units 
-										if !in(cu,connectedunits)
-											push!(connectedunits,cu)
-										end
-									end
-									for cw in nsg.spawns
-										if !in(cw,cwhite)
-											push!(cwhite,cw)
-										end
-									end
-								end
-							end
-						end
 					end
 				end
 			end
@@ -195,32 +155,21 @@ function getgroup(game,unit::Unit,color=-1,connectedunits=Unit[]) #why don't whi
 		end
 		temp=temp2
 	end
-	body=getcellgroup(game,connectedunits[1]) #tempfix
-	return newgroup(cwhite,body,connectedunits)
+	return newgroup(spawns,body,connectedunits)
 end
-function samegroup(group1::Group,group2::Group)
-	for unit in group1.units
-		if !in(unit,group2.units)
-			return false
-		end
-	end
-	return true
-end
-function updategroups!(game::Game) #sometimes doesn't find most recent unit..? Or is there an issue when deleting units? Maybe fixed
+function getgroups(game)
 	groups=Group[]
 	for spawn in game.spawns
-		push!(groups,getgroup(game,spawn))
-	end
-	unique=Group[groups[1]]
-	for group in groups
-		for uniq in unique
-			if samegroup(group,uniq)
-				break
-			end
-			push!(unique,group)
+		g=getgroup(game,spawn)
+		if !hasgroup(groups,g)
+			push!(groups,g)
 		end
 	end
-	game.groups=unique	
+	return groups
+end
+function sync!(game::Game)
+	game.groups=getgroups(game)
+	game.lifemap=unitslive(game)
 end
 function placeable(game,unit::Unit)
 	if game.map[unit.loc]!=0
@@ -231,7 +180,7 @@ function placeable(game,unit::Unit)
 	return true
 end
 function placeunit!(game,unit)
-	if placeable(game,unit)#game.map[unit.loc]==0
+	if placeable(game,unit)
 		game.map[unit.loc]=unit
 		if !in(unit,game.sequence) 
 			push!(game.sequence,unit)
@@ -264,34 +213,11 @@ function removeunit!(game,unit::Unit)
 	end
 	if unit.canspawn
 		i=findunit(unit,game.spawns)
-		deleteat!(game.units,i)
+		deleteat!(game.spawns,i)
 	end
 	return "<3"
 end
-function allunitslive!(game)
-	lifemap=Dict()
-	for loc in game.board.grid
-		lifemap[loc]=[0.0,0,0]
-	end
-	for (loc,unit) in game.map
-		if isa(unit,Unit)
-			unit.live!(game,unit,lifemap)
-		end
-	end
-	game.lifemap=lifemap
-	return lifemap
-end
-#lifemap=allunitslive! #maybe not store lifemap in game since it gets modified in so many places. Rewrite everything to work with a temp lifemap. Or rather have a solid lifemap and a temp harvest ledger
-function lifemap(game)
-	lifemap=Dict()
-	for loc in game.board.grid
-		lifemap[loc]=[0.0,0,0]
-	end
-	for unit in game.units
-		unit.live!(game,unit,lifemap)
-	end
-	return lifemap
-end
+
 function newledger(game)
 	ledger=Dict()
 	for loc in game.board.grid
@@ -299,12 +225,12 @@ function newledger(game)
 	end
 	return ledger
 end
-function getpoints!(game,unit,loc,distance,ledger) #remake cleaner
+function getpoints!(game,unit,loc,distance,ledger) #remake cleaner. Meaning, more humanreadable? ll lci llm l lci lif. OMG this place is bugprone, readability helps. 
 	llm=game.lifemap[loc] #local lifemap
 	ll=ledger[loc]
 	lif=distance==0?unit.baselife:(unit.baselife/6/distance)
 	ncol=numcolors(llm)
-	l=llm.-ll[5] #local life - harvest
+	l=llm.-ll[5] #local life - lightharvest
 	ncoll=numcolors(l)
 	points=[[0.0,0,0],0.0,0,0,0]
 	if ncol==3 && ncoll==3
@@ -329,15 +255,15 @@ function getpoints!(game,unit,loc,distance,ledger) #remake cleaner
 		l[1]-=ll[4]
 		l[2]-=ll[2]
 		l[3]-=ll[3]
-		lifc=lif.*unit.color
+		lifc=lif.*unit.color #nooo?
 		for c in 1:3
 			if lifc[c]>0
-				points[c+1]+=min(lifc[c],l[c%3+1])
+				points[c+1]+=min(l[c],l[c%3+1]) #no!
 				#game.lifemap[loc][c%3+1]-=points[c+1] #problem? *trollface* Solved!
 				ll[c+1]+=points[c+1]
 			end
 		end
-#if loc==(-1,1,2);println(lif,ll[2:4],l);end #useful for debugging
+#if ll[3]!=0 && unit.color==(0,1,0);println(loc,ll,l);end #useful for debugging
 		#if numcolors(l)==1
 		#	l=[0,0,0]
 		#end
@@ -364,7 +290,7 @@ function unitharvest(game,unit,ledger)
 						points.+=p
 						push!(temp2,h)
 					elseif unit.passoverself && (game.map[h].color==unit.color || game.map[h].color==white)
-						points.+=getpoints!(game,unit,h,rad,ledger) #problem!
+						points.+=getpoints!(game,unit,h,rad,ledger) #problem! Not anymore! Why are the comments still here? Why not? I asked first! They liven up the code. OK then
 						push!(temp2,h)
 					elseif unit.inclusive && game.map[h]!=0
 						points.+=getpoints!(game,unit,h,rad,ledger) #*seriousface* solving by deprecating game.lifemap. No! Long live the lifemap+ledger union
@@ -394,14 +320,13 @@ function checkharvest(game,group::Group,ledger)
 	return points
 end
 function checkharvest(game::Game)
-	#game=deepcopy(game) #this is silly, remove ! from unit.harvest! Done, still updates lifemap thou. 
-	updategroups!(game) #this shouldn't count as modifying the state of the game since if they arent correct the state is incorrect and should always be updated
-	#allunitslive!(game)
-	game.lifemap=lifemap(game)
+	#game=deepcopy(game) #this is silly, remove ! from unit.harvest! Done, still updates lifemap thou. Not anymore, now puts harvest data in a ledger
+	sync!(game) #this shouldn't count as modifying the state of the game since if they arent correct the state is incorrect and should always be updated. Maybe we don't have to sync thou since it is always synced upon new move... Robustness over velocity!
 	ledger=newledger(game)
 	points=[[0.0,0,0],0.0,0,0,0]
 	for group in game.groups
 		points+=checkharvest(game,group,ledger)
+# !
 #		group.harvested=true
 #		for unit in group.units
 #			unit.harvested=true
@@ -412,55 +337,16 @@ function checkharvest(game::Game)
 #		for unit in group.units
 #			unit.harvested=false
 #		end
-#	end	#may need to do this to avoid units in multiple groups to multiharvest, but can't do it now because it should harvest to the group where it is in the body
+#	end	
+#may need to do this to avoid units in multiple groups to multiharvest, but can't do it now because it should harvest to the group where it is in the body, so have to harvest with bodies first
 	return points
 end
-function harvest!(game,group::Group)
-	if !group.harvested
-		harv=checkharvest(game,group) #some stuff needs to be rewritten to avoid the deepcopy above
-		group.points+=harv
-		group.harvested=true
-		for unit in group.units
-			unit.harvested=true
-		end
-	end
-end
-function allgroupsharvest!(game)
-	for group in game.groups
-		harvest!(game,group)
-	end
-end
 
-function collectharvest!(game::Game)
-	for group in game.groups
-		game.points+=group.points
-		group.points-=group.points
-	end
-end
-function newseason!(game)
-	for group in game.groups
-		group.harvested=false
-		for unit in group.units
-			unit.harvested=false
-		end
-	end
-	game.season+=1
-end
-function harvest!(game::Game)
-	allunitslive!(game) #maybe call only when new units are placed. But then placing units takes longer...
-	updategroups!(game)
-	allgroupsharvest!(game)
-	collectharvest!(game)
-	newseason!(game)
-	push!(game.sequence,:harvest)
-	GAccessor.text(game.g[1,2],pointslabel(game))
-	return game.points
-end
 function bonds(game)
 	nc=0
 	#checked=[]
-	for (loc,unit) in game.map
-	#	push!(checked,loc)
+	for (loc,unit) in game.map #rewrite with game.units?
+	#	push!(checked,loc) #this didnt work...
 		if isa(unit,Unit) 
 			for c in adjacent(unit.loc)
 				if in(c,keys(game.map))
@@ -479,7 +365,7 @@ function pointslabel(game)
 	bp=round.(points[1],1)
 	points[1]=0
 	points=round.(points,1)
-	return "Points!\nLite:\nRed\t$(bp[1])\nGreen\t$(bp[2])\nBlue\t$(bp[3])\nLife:\nRed\t$(points[2])\nGreen\t$(points[3])\nBlue\t$(points[4])\nLight: $(points[5])"
+	return "Points!\nLite:\nRed\t$(bp[1])\nGreen\t$(bp[2])\nBlue\t$(bp[3])\nLife:\nRed\t$(points[2])\nGreen\t$(points[3])\nBlue\t$(points[4])\nLight:\t$(points[5])"
 end
 function infolabel(game)
 	rgb=[0,0,0]
@@ -488,7 +374,7 @@ function infolabel(game)
 	end
 	return "Information!\nUnits: $(length(game.units))\nRed: $(rgb[1])\nGreen: $(rgb[2])\nBlue: $(rgb[3])\nBonds: $(bonds(game))"
 end
-function undo!(game) #wont undo captures? Maybe when reloading sequence. There aren't captures anymore. Wont undo board expansions
+function undo!(game) #wont undo captures? Maybe when reloading sequence. There aren't captures anymore. Wont undo board expansions. Maybe it should? Not much use now... Easy right, just pop the seq and reload
 	removeunit!(game.units[end])
 	if !game.colock
 		game.colind-=1
@@ -497,36 +383,6 @@ function undo!(game) #wont undo captures? Maybe when reloading sequence. There a
 		end
 	end
 	return hex
-end
-function printpoints(game)
-	harv=round.(peekharvest(game),1,10)
-	println("Black: ",harv[1]," Red: ",harv[2]," Green: ",harv[3]," Blue: ",harv[4]," White: ",harv[5])#," Total: ",sum(harv))
-end
-function nearestwhite(game,hex,layer=false)
-	white=(1,1,1)
-	group=[hex]
-	temp=[hex]
-	for rad in 1:1000000
-		temp2=[]
-		for t in temp
-			for h in adjacent(t,1,layer)
-				if in(h,keys(game.map))
-					unit=game.map[h]
-					if unit!=0 && unit.color==white
-						return rad
-					end
-					if !in(h,group) && !in(h,temp) && !in(h,temp2)  
-						push!(temp2,h)
-					end
-				end
-			end
-		end
-		for h2 in temp2
-			push!(group,h2)
-		end
-		temp=temp2
-	end
-	return Inf
 end
 
 function drawboard(game,ctx,w,h)
@@ -558,9 +414,10 @@ function drawboard(game,ctx,w,h)
 		loc=hex_to_pixel(unit.loc[1],unit.loc[2],size)
 		floc=(loc[1]+offset[1]+w/2,loc[2]+offset[2]+h/2)
 		rad=size*0.866/2
-		arc(ctx,floc[1],floc[2],rad, 0, 2pi) #why isn't the circle radius the distance between locs?
+		arc(ctx,floc[1],floc[2],rad, 0, 2pi) #why isn't the circle radius the distance between locs? Whyyyy whyyyy someone pleeease fiiix
 		fill(ctx)
-		#set_source_rgb(ctx,game.board.gridcolor...) #border
+		#unit border:
+		#set_source_rgb(ctx,game.board.gridcolor...) 
 		#arc(ctx, loc[1]+offset[1]+w/2, loc[2]+offset[2]+h/2, size/3, 0, 2pi)
 		#stroke(ctx)
 		if !isempty(unit.graphic)
@@ -573,7 +430,7 @@ function drawboard(game,ctx,w,h)
 			fill(ctx)
 		end
 	end
-	#showall(game.board.win)
+	#showall(game.board.win) #should probably look up the difference between all these revealing methods
 	reveal(game.board.c)
 	GAccessor.text(game.gui[:scorelabel],pointslabel(game))
 	GAccessor.text(game.gui[:newslabel],infolabel(game))
@@ -585,7 +442,7 @@ function drawboard(game::Game)
 	drawboard(game,ctx,w,h)
 end
 
-function expandboard!(game::Game,shells::Integer=6,initlocs=[(6,6,2)],basecost=-1,reveal=true)
+function expandboard!(game::Game,shells::Integer=6,initlocs=[(6,6,2)],reveal=true)
 	patch=makegrid(shells,initlocs)
 	for loc in patch
 		if !in(loc,keys(game.map))
@@ -593,8 +450,8 @@ function expandboard!(game::Game,shells::Integer=6,initlocs=[(6,6,2)],basecost=-
 			push!(game.board.grid,loc)
 		end
 	end
-	push!(game.sequence,(:expand,[shells,initlocs,basecost]))
-	if reveal
+	push!(game.sequence,(:expand,[shells,initlocs]))
+	if reveal #without this there is sometimes some severe error (when loadicing)
 		drawboard(game)
 	end
 	return "<3"

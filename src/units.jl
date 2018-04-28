@@ -8,7 +8,6 @@ units=Dict("standard"=>Dict(:name=>"standard", :ir=>2, :pl=>[2])) #change :pl to
 units["tunnel"]=Dict(:name=>"tunnel", :ir=>0, :pl=>[1]) #these by default cannot be placed under/over surrounded territory without permission, such permissions are not hard coded but may rather result in a rejected/modified merge request
 units["bridge"]=Dict(:name=>"bridge", :ir=>0, :pl=>[3])
 units["queen"]=Dict(:name=>"queen", :canspawn=>true, :graphic=>[(0.5,0.5),(-0.5,0.5),(0,-0.5)])
-units["spawn"]=units["queen"]
 
 #white unit is a spawn for all colors whereas any unit with color (1,1,1) "is" every color, so a white spawn is a spawn for all and "white" as a unit spec can be removed 
 #=

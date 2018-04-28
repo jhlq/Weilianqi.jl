@@ -61,7 +61,8 @@ function newboard(shells=6,initlocs=[(0,0,2)],grid=0,c=@GtkCanvas(),sizemod=5,si
 	return board
 end
 
-function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=["standard"],map=Dict(),unit=0,color=(1,0,0),colors=colorsets[1],colind=1,colmax=3,colock=false,delete=false,sequence=[newunit((1,1,1),(0,0,2),units["queen"])],board=0,printscore=false,points=[0.0,0,0,0,0],season=0,win=0,window=(900,700),autoharvest=true)
+function newgame(name=string(round(Integer,time())),boardparams=[];unitparams=["standard"],map=Dict(),unit=0,color=(1,0,0),colors=colorsets[1],colind=1,colmax=3,colock=false,delete=false,sequence=[newunit((1,0,0),(-1,1,2),units["queen"]),newunit((0,1,0),(0,-1,2),units["queen"]),newunit((0,0,1),(1,0,2),units["queen"])],board=0,printscore=false,points=[0.0,0,0,0,0],season=0,win=0,window=(900,700),autoharvest=true)
+#sequence=[newunit((1,0,0),(-1,1,2),units["queen"]),newunit((0,1,0),(0,-1,2),units["queen"]),newunit((0,0,1),(1,0,2),units["queen"])] #make arbitrary sequences to start games with: newgame(sequence=yoursequence). For example tunnelracing where storages in the corners have to be connected but only the first person to cross across the board can do it without tunneling
 	if board==0
 		board=newboard(boardparams...)
 	end
@@ -70,7 +71,7 @@ function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=["
 	end
 	game=Game(name,map,Group[],Unit[],Unit[],unitparams,color,colors,colind,colmax, colock,delete,sequence,board,printscore,points,season,win,window,0,0,Dict(),autoharvest)
 	placeseq!(game)	
-	updategroups!(game)
+	sync!(game)
 	if win==0
 		box=GtkBox(:h)
 		savebtn=GtkButton("Save")
@@ -190,7 +191,10 @@ function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=["
 		end
 		id = signal_connect(zoomscale, "value-changed") do widget
 			game.board.sizemod=Gtk.G_.value(widget)/10
-			drawboard(game)
+			x=Gtk.G_.value(spexpx)
+			y=Gtk.G_.value(spexpy)
+			center(game,(x,y))
+#			drawboard(game)
 		end
 		id = signal_connect(xoscale, "value-changed") do widget
 			game.board.panx=-Gtk.G_.value(widget)*10
@@ -274,7 +278,8 @@ function newgame(name=string(round(Integer,time())),boardparams=[],unitparams=["
 				printpoints(game)
 			end
 			#GAccessor.text(scorelabel,pointslabel(game))
-			updategroups!(game)
+			#updategroups!(game)
+			sync!(game)
 		end
 		drawboard(game,ctx,w,h)
 		reveal(widget)

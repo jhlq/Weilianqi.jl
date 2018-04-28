@@ -41,9 +41,7 @@ function save(game)
 	close(io)
 	println("Saved $(length(game.units)) units at $dir")
 end
-#savelite=(game)->write("~/.weilianqi/$(round(Integer,time())).txt","$(game.sequence)")
 function loadsequence!(game::Game,seq,originoffset=(0,0,0))
-	#seq=eval(parse(seqstr))
 	for entry in seq
 		if entry==:harvest
 			harvest!(game)
@@ -53,13 +51,9 @@ function loadsequence!(game::Game,seq,originoffset=(0,0,0))
 			(loc,unit)=entry
 			loco=loc.+originoffset
 			placeunit!(game,unit)
-#			game.map[loco]=unit
-#			push!(game.sequence,(loco,unit))
 		end
 	end
-	#GAccessor.text(game.g[1,2],pointslabel(game))
-	#drawboard(game)
-	return true
+	return "<3"
 end
 function loadic(dic::Dict,originoffset=(0,0,0))
 	#game.board=newboard(dic[:shells],dic[:initlocs]) #seeeegfault
@@ -73,14 +67,14 @@ function loadic(dic::Dict,originoffset=(0,0,0))
 	setproperty!(game.gui[:deletecheck],:active,game.delete)
 	for entry in dic[:sequence]
 		if isa(entry,Dict)
+			if entry[:name]=="spawn";entry[:name]="queen";end
 			unit=newunit(entry)
 			unit.loc=unit.loc.+originoffset
-			if unit.name=="spawn";unit.name="queen";end
 			placeunit!(game,unit)
 		elseif entry==:harvest
 			harvest!(game)
 		elseif entry[1]==:expand
-			expandboard!(game,entry[2]...,false)
+			expandboard!(game,entry[2][1],entry[2][2],false) #loadicing
 		elseif entry[1]==:delete
 			removeunit!(game,entry[2])
 		end
@@ -98,10 +92,5 @@ function loadgame(name::String,backtrack::Integer=0)
 		loadsequence!(game,dic)
 	end
 	return game	
-end
-function getexpandcost(shells::Integer=6,initlocs=[(6,6,2)],basecost=50) #deprecated
-	patch=makegrid(shells,initlocs)
-	cost=length(patch)+basecost*length(initlocs)
-	return cost
 end
 
