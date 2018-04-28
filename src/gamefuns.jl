@@ -264,9 +264,6 @@ function getpoints!(game,unit,loc,distance,ledger) #remake cleaner. Meaning, mor
 			end
 		end
 #if ll[3]!=0 && unit.color==(0,1,0);println(loc,ll,l);end #useful for debugging
-		#if numcolors(l)==1
-		#	l=[0,0,0]
-		#end
 	end
 	return points
 end
