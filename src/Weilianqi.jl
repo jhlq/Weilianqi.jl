@@ -1,5 +1,5 @@
 module Weilianqi
-export newgame, save, loadgame, expandboard!, checkharvest, center, setcolorset, getgroup, newunit, units, sync!
+export newgame, save, loadgame, expandboard!, checkharvest, center, setcolorset, getgroup, newunit, units, sync!, string2game
 using Gtk, Graphics
 
 dir=joinpath(homedir(),"weilianqi","saves")

@@ -59,7 +59,7 @@ function loadsequence!(game::Game,seq,originoffset=(0,0,0))
 end
 function loadic(dic::Dict,originoffset=(0,0,0))
 	#game.board=newboard(dic[:shells],dic[:initlocs]) #seeeegfault
-	game=newgame(dic[:name],[dic[:shells],dic[:initlocs]])
+	game=newgame(dic[:name],[dic[:shells],dic[:initlocs]],sequence=[])
 	game.colind=dic[:colind]
 	game.color=game.colors[game.colind]
 	game.colmax=dic[:colmax]
@@ -82,6 +82,10 @@ function loadic(dic::Dict,originoffset=(0,0,0))
 		end
 	end
 	return game
+end
+function string2game(lastlineofsavefile)
+	dic=eval(parse(lastlineofsavefile))
+	return loadic(dic)
 end
 function loadgame(name::String,backtrack::Integer=0)
 	path=joinpath(homedir(),"weilianqi","saves",name)
