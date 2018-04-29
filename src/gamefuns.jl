@@ -225,10 +225,11 @@ function newledger(game)
 	end
 	return ledger
 end
-function getpoints!(game,unit,loc,distance,ledger) #remake cleaner. Meaning, more humanreadable? ll lci llm l lci lif. OMG this place is bugprone, readability helps. 
+function getpoints!(game,unit,loc,distance,ledger,partial=1) #remake cleaner. Meaning, more humanreadable? ll lci llm l lci lif. OMG this place is bugprone, readability helps. 
 	llm=game.lifemap[loc] #local lifemap
 	ll=ledger[loc]
 	lif=distance==0?unit.baselife:(unit.baselife/6/distance)
+	lif=lif*partial
 	ncol=numcolors(llm)
 	l=llm.-ll[5] #local life - lightharvest
 	ncoll=numcolors(l)
@@ -255,10 +256,10 @@ function getpoints!(game,unit,loc,distance,ledger) #remake cleaner. Meaning, mor
 		l[1]-=ll[4]
 		l[2]-=ll[2]
 		l[3]-=ll[3]
-		lifc=lif.*unit.color #nooo?
+		lifc=lif.*unit.color #nooo? Yes?
 		for c in 1:3
 			if lifc[c]>0
-				points[c+1]+=min(l[c],l[c%3+1]) #no!
+				points[c+1]+=min(l[c],l[c%3+1],lifc[c]) #no! Maybe...
 				#game.lifemap[loc][c%3+1]-=points[c+1] #problem? *trollface* Solved!
 				ll[c+1]+=points[c+1]
 			end
@@ -267,13 +268,13 @@ function getpoints!(game,unit,loc,distance,ledger) #remake cleaner. Meaning, mor
 	end
 	return points
 end
-function unitharvest(game,unit,ledger)
+function unitharvest(game,unit,ledger,partial=1)
 	points=[[0.0,0,0],0.0,0,0,0]
-	if unit.harvested
+	if unit.harvested || unit.harvested>=1
 		return points
 	end
 
-	white=(1,1,1)
+	white=(1,1,1) #remove?
 	points.+=getpoints!(game,unit,unit.loc,0,ledger)
 	temp=[unit.loc]
 	checked=[unit.loc]
@@ -282,8 +283,8 @@ function unitharvest(game,unit,ledger)
 		for t in temp
 			for h in adjacent(t,1,unit.groundlevel)
 				if !in(h,temp) &&!in(h,checked) && in(h,game.board.grid) 
-					if game.map[h]==0 || unit.passover
-						p=getpoints!(game,unit,h,rad,ledger)
+					if game.map[h]==0 || unit.passover #why not merge these clauses?
+						p=getpoints!(game,unit,h,rad,ledger,partial)
 						points.+=p
 						push!(temp2,h)
 					elseif unit.passoverself && (game.map[h].color==unit.color || game.map[h].color==white)
@@ -335,7 +336,7 @@ function checkharvest(game::Game)
 #			unit.harvested=false
 #		end
 #	end	
-#may need to do this to avoid units in multiple groups to multiharvest, but can't do it now because it should harvest to the group where it is in the body, so have to harvest with bodies first
+#may need to do this to avoid units in multiple groups to multiharvest, but can't do it now because it should harvest to the group where it is in the body, so have to harvest with bodies first. Or let it harvest partially
 	return points
 end
 
@@ -365,7 +366,7 @@ function pointslabel(game)
 	return "Points!\nLite:\nRed\t$(bp[1])\nGreen\t$(bp[2])\nBlue\t$(bp[3])\nLife:\nRed\t$(points[2])\nGreen\t$(points[3])\nBlue\t$(points[4])\nLight:\t$(points[5])"
 end
 function infolabel(game)
-	rgb=[0,0,0]
+	rgb=[0.0,0,0]
 	for unit in game.units
 		rgb.+=unit.color
 	end
