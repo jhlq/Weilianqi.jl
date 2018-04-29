@@ -95,7 +95,7 @@ function unitslive(game,color)
 	for loc in game.board.grid
 		lifemap[loc]=[0.0,0,0]	#this is sometimes redundant and sometimes needed...
 	end
-	for unit in game.units #rewrite this as below
+	for unit in game.units 
 		if (color==(1,1,1) || unit.color==color || unit.color==(1,1,1)) #white, your superpowers are being removed, enjoy them while you can
 			unit.live!(game,unit,lifemap)
 		end

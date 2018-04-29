@@ -1,3 +1,5 @@
+include("types.jl")
+include("functions.jl")
 include("units.jl")
 include("gamefuns.jl")
 include("newfuns.jl")

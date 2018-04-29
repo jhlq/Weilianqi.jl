@@ -1,16 +1,3 @@
-include("types.jl")
-
-#saveseq=(game)->write("saves/$(round(Integer,time())).txt","$(game.sequence)")
-function placeseq(seq,map,originoffset=(0,0,0))
-	for (loc,unit) in seq
-		map[loc.+originoffset]=unit
-	end
-end
-function loadseq(filename,originoffset=(0,0,0))
-	push!(storage[:sequence],eval(parse(read("saves/"*filename,String))))
-	placeseq()
-end
-
 function makegrid(layers=3,startlocs=[(0,0,2)],groundlevel=false)
 	grid=Set{Tuple}()
 	push!(grid,startlocs...)
@@ -61,70 +48,11 @@ function adjacent(hex,spacing=1,layer=false)
 	end
 	return adj
 end
-#=
-function placewhite(spacing::Integer,ori=(0,0,2))
-	white=length(storage[:players])
-	if !haskey(storage[:map],ori) || storage[:map][ori]==white
-		return
-	end
-	storage[:map][ori]=white
-	push!(storage[:sequence],(ori,white))
-	adj=adjacent(ori,spacing,true)
-	for ad in adj
-		placewhite(spacing,ad)
-	end
-end
 
-function initgame(startlocs=[(0,0,2)])
-	storage[:grid]=makegrid(storage[:layers],startlocs)
-	storage[:map]=Dict((0,0,2)=>0)
-	for loc in storage[:grid]
-		storage[:map][loc]=0
-	end
-	placewhite(storage[:spacing]) 
-end
-
-function liberties(group)
-	if isempty(group)
-		return 1
-	end
-	checked=Tuple[]
-	libs=0
-	for hex in group
-		for h in adjacent(hex)
-			if !in(h,group) && !in(h,checked) && in(h,keys(storage[:map]))
-				if storage[:map][h]==0
-					libs+=1
-				end
-				push!(checked,h)
-			end
-		end
-	end
-	return libs
-end
-=#
-#=
-function connections()
-	nc=0
-	for (loc,col) in storage[:map]
-		if col>0 
-			for c in adjacent(loc)
-				if in(c,keys(storage[:map]))
-					ac=storage[:map][c]
-					if ac!=0 && ac!=col
-						nc+=1
-					end
-				end
-			end
-		end
-	end
-	return nc/2
-end
-=#
-function freelocs(layer=2)
+function freelocs(game,layer=2)
 	free=0
 	tot=0
-	for (loc,col) in storage[:map]
+	for (loc,col) in game.map
 		if loc[3]==layer
 			tot+=1
 			if col==0
