@@ -57,16 +57,26 @@ function loadsequence!(game::Game,seq,originoffset=(0,0,0))
 	end
 	return "<3"
 end
-function loadic(dic::Dict,originoffset=(0,0,0))
+function loadic!(game,dic::Dict,originoffset=(0,0,0))
 	#game.board=newboard(dic[:shells],dic[:initlocs]) #seeeegfault
-	game=newgame(dic[:name],[dic[:shells],dic[:initlocs]],sequence=[])
-	game.colind=dic[:colind]
+	if haskey(dic,:colind)
+		game.colind=dic[:colind]
+	end
 	game.color=game.colors[game.colind]
-	game.colmax=dic[:colmax]
-	game.colock=dic[:colock]
+	if haskey(dic,:colmax)
+		game.colmax=dic[:colmax]
+	end
+	if haskey(dic,:colock)
+		game.colock=dic[:colock]
+	end
 	setproperty!(game.gui[:colockcheck],:active,game.colock)
-	game.delete=dic[:delete]
+	if haskey(dic,:delete)
+		game.delete=dic[:delete]
+	end
 	setproperty!(game.gui[:deletecheck],:active,game.delete)
+	if haskey(dic,:initlocs) #&& game.board.initlocs!=dic[:initlocs]
+		unshift!(dic[:sequence],(:expand,[dic[:shells],dic[:initlocs]])) #let's hope this works
+	end
 	for entry in dic[:sequence]
 		if isa(entry,Dict)
 			if entry[:name]=="spawn";entry[:name]="queen";end
@@ -76,6 +86,9 @@ function loadic(dic::Dict,originoffset=(0,0,0))
 		elseif entry==:harvest
 			harvest!(game)
 		elseif entry[1]==:expand
+			for ili in 1:length(entry[2][2])
+				entry[2][2][ili]=entry[2][2][ili].+originoffset
+			end
 			expandboard!(game,entry[2][1],entry[2][2],false) #loadicing
 		elseif entry[1]==:delete
 			removeunit!(game,entry[2])
@@ -83,9 +96,21 @@ function loadic(dic::Dict,originoffset=(0,0,0))
 	end
 	return game
 end
+function loadic(dic::Dict,originoffset=(0,0,0))
+	game=newgame(dic[:name],[dic[:shells],dic[:initlocs]],sequence=[])
+	loadic!(game,dic,originoffset)
+	return game
+end
 function string2game(lastlineofsavefile)
 	dic=eval(parse(lastlineofsavefile))
 	return loadic(dic)
+end
+function loadgame!(game::Game,name::String,originoffset=(0,0,0),backtrack::Integer=0)
+	path=joinpath(homedir(),"weilianqi","saves",name)
+	lines=readlines(path)
+	dic=eval(parse(lines[end-backtrack]))
+	loadic!(game,dic,originoffset)
+	return game
 end
 function loadgame(name::String,backtrack::Integer=0)
 	path=joinpath(homedir(),"weilianqi","saves",name)
