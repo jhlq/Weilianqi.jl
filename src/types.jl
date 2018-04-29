@@ -13,7 +13,7 @@ type Unit
 	name::String
 	costfun::Function
 	canspawn::Bool
-	harvested::Bool
+	harvested
 	graphic::Array #of vertices (x,y) where x is distance in radians from origin
 	extra #for arbitrary functionality, define your own units and add them to units in units.jl
 end
@@ -39,7 +39,7 @@ type Board
 	pany::Number
 	bgcolor #background
 	gridcolor
-	expandbasecost::Number #deprecated because creating new land where our units can live free is not something that should be hindered... You want to make more baby units then go right ahead, we will even help you!
+	#expandbasecost::Number #deprecated because creating new land where our units can live free is not something that should be hindered... You want to make more baby units then go right ahead, we will even help you!
 end
 type Game
 	name::String #defaults to a timestamp, a good name makes Game feel special and unique

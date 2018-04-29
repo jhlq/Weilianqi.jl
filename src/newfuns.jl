@@ -53,11 +53,11 @@ function newgroup(spawns::Array,body::Array,units::Array)
 	return Group(spawns,body,units,[0.0,0,0,0,0],false)
 end
 
-function newboard(shells=6,initlocs=[(0,0,2)],grid=0,c=@GtkCanvas(),sizemod=5,size=30,offsetx=0,offsety=0,bgcolor=(0,0,0),gridcolor=(1/2,1/2,1/2),expandbasecost=-1)
+function newboard(shells=6,initlocs=[(0,0,2)],sizemod=5,size=30,offsetx=0,offsety=0,bgcolor=(0,0,0),gridcolor=(1/2,1/2,1/2),grid=0,c=@GtkCanvas())
 	if grid==0
 		grid=makegrid(shells,initlocs)
 	end
-	board=Board(shells,initlocs,grid,c, sizemod,size,offsetx,offsety,0,0,bgcolor,gridcolor,expandbasecost)
+	board=Board(shells,initlocs,grid,c, sizemod,size,offsetx,offsety,0,0,bgcolor,gridcolor)
 	return board
 end
 
