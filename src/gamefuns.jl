@@ -374,6 +374,7 @@ function infolabel(game)
 	for unit in game.units
 		rgb.+=unit.color
 	end
+	rgb=round.(rgb,1)
 	return "Information!\nUnits: $(length(game.units))\nRed: $(rgb[1])\nGreen: $(rgb[2])\nBlue: $(rgb[3])\nBonds: $(bonds(game))"
 end
 function undo!(game) #wont undo captures? Maybe when reloading sequence. There aren't captures anymore. Wont undo board expansions. Maybe it should? Not much use now... Easy right, just pop the seq and reload

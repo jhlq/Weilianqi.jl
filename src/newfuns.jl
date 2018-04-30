@@ -155,7 +155,7 @@ function newgame(name=string(round(Integer,time())),boardparams=[];unitparams=["
 		g[2,11]=spexpy
 		g[1,13]=shellexplabel
 		g[2,13]=spexpshell
-		g[3,13]=withlabel
+		g[3,12]=withlabel
 		g[2,12]=expbtn
 		g[2,14]=centerbtn
 		push!(box,game.board.c)	
