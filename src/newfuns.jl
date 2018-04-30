@@ -104,11 +104,11 @@ function newgame(name=string(round(Integer,time())),boardparams=[];unitparams=["
 		Gtk.G_.value(spexpx,0)
 		spexpy=GtkSpinButton(-1000:1000)
 		Gtk.G_.value(spexpy,0)
-		spexpshell=GtkSpinButton(0:1000)
+		spexpshell=GtkSpinButton(0:3000)
 		Gtk.G_.value(spexpshell,game.board.shells+1)
 		xexplabel=GtkLabel("X")
 		yexplabel=GtkLabel("Y")
-		shellexplabel=GtkLabel("Radius")
+		shellexplabel=GtkLabel("radius")
 		placebtn=GtkButton("Place unit at")
 		expbtn=GtkButton("Expand board at (X,Y)")
 		centerbtn=GtkButton("Center board on (X,Y)")
@@ -116,6 +116,7 @@ function newgame(name=string(round(Integer,time())),boardparams=[];unitparams=["
 		setproperty!(deletecheck,:active,game.delete)
 		clabel1=GtkLabel("Place")
 		clabel2=GtkLabel("units")
+		withlabel=GtkLabel("with")
 		unitscombo=GtkComboBoxText()
 		staind=0;staindset=false
 		for c in keys(units)
@@ -154,6 +155,7 @@ function newgame(name=string(round(Integer,time())),boardparams=[];unitparams=["
 		g[2,11]=spexpy
 		g[1,13]=shellexplabel
 		g[2,13]=spexpshell
+		g[3,13]=withlabel
 		g[2,12]=expbtn
 		g[2,14]=centerbtn
 		push!(box,game.board.c)	
@@ -249,9 +251,9 @@ function newgame(name=string(round(Integer,time())),boardparams=[];unitparams=["
 		offy=game.board.offsety+game.board.pany
 		q,r=pixel_to_hex(event.x-w/2-offx,event.y-h/2-offy,size)
 		maindiff=abs(round(q)-q)+abs(round(r)-r)
-		qup,rup=pixel_to_hex(event.x-w/2+size*cos(pi/6),event.y-h/2+sin(pi/6)*size,size)
+		qup,rup=pixel_to_hex(event.x-w/2+size*cos(pi/6)-offx,event.y-h/2+sin(pi/6)*size-offy,size)
 		updiff=abs(round(qup)-qup)+abs(round(rup)-rup)
-		qdown,rdown=pixel_to_hex(event.x-w/2+size*cos(pi/6),event.y-h/2-sin(pi/6)*size,size)
+		qdown,rdown=pixel_to_hex(event.x-w/2+size*cos(pi/6)-offx,event.y-h/2-sin(pi/6)*size-offy,size)
 		downdiff=abs(round(qdown)-qdown)+abs(round(rdown)-rdown)
 		if length(nu.pl)==1
 			best=(nu.pl[1]+1)%3+1
