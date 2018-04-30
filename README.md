@@ -15,7 +15,7 @@ using Weilianqi
 game=newgame("name");
 ```
 
-There are many ways to initialize the board, most can be obtained manually by deleting and expanding. Here are a few presets (work in progress):
+There are many ways to initialize the board, most can be obtained manually by deleting and expanding. Here are a few presets:
 ```
 g1=newgame("normal",sequence=[newunit((1,0,0),(-1,1,2),units["queen"]),newunit((0,1,0),(0,-1,2),units["queen"]),newunit((0,0,1),(1,0,2),units["queen"])]);
 g2=newgame("split",[5,[(-15,0,2),(0,15,2),(15,-15,2)],15],sequence=[newunit((1,0,0),(-15,0,2),units["queen"]),newunit((0,1,0),(0,15,2),units["queen"]),newunit((0,0,1),(15,-15,2),units["queen"])]);

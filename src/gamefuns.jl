@@ -170,6 +170,8 @@ end
 function sync!(game::Game)
 	game.groups=getgroups(game)
 	game.lifemap=unitslive(game)
+	GAccessor.text(game.gui[:scorelabel],pointslabel(game,false))
+	GAccessor.text(game.gui[:newslabel],infolabel(game))
 end
 function placeable(game,unit::Unit)
 	if game.map[unit.loc]!=0
@@ -317,9 +319,11 @@ function checkharvest(game,group::Group,ledger)
 	end
 	return points
 end
-function checkharvest(game::Game)
+function checkharvest(game::Game,sync::Bool=true)
 	#game=deepcopy(game) #this is silly, remove ! from unit.harvest! Done, still updates lifemap thou. Not anymore, now puts harvest data in a ledger
-	sync!(game) #this shouldn't count as modifying the state of the game since if they arent correct the state is incorrect and should always be updated. Maybe we don't have to sync thou since it is always synced upon new move... Robustness over velocity!
+	if sync
+		sync!(game) #this shouldn't count as modifying the state of the game since if they arent correct the state is incorrect and should always be updated. Maybe we don't have to sync thou since it is always synced upon new move... Robustness over velocity!
+	end
 	ledger=newledger(game)
 	points=[[0.0,0,0],0.0,0,0,0]
 	for group in game.groups
@@ -358,8 +362,8 @@ function bonds(game)
 	end
 	return Int(nc/2)
 end
-function pointslabel(game)
-	points=checkharvest(game)
+function pointslabel(game,sync::Bool=true)
+	points=checkharvest(game,sync)
 	bp=round.(points[1],1)
 	points[1]=0
 	points=round.(points,1)
@@ -430,8 +434,8 @@ function drawboard(game,ctx,w,h)
 	end
 	#showall(game.board.win) #should probably look up the difference between all these revealing methods
 	reveal(game.board.c)
-	GAccessor.text(game.gui[:scorelabel],pointslabel(game))
-	GAccessor.text(game.gui[:newslabel],infolabel(game))
+	#GAccessor.text(game.gui[:scorelabel],pointslabel(game))
+	#GAccessor.text(game.gui[:newslabel],infolabel(game))
 end
 function drawboard(game::Game)
 	ctx=getgc(game.board.c)

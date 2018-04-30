@@ -122,6 +122,7 @@ function loadgame(name::String,backtrack::Integer=0)
 		game=newgame(name)
 		loadsequence!(game,dic)
 	end
+	sync!(game)
 	return game	
 end
 

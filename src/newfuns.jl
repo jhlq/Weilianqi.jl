@@ -71,15 +71,14 @@ function newgame(name=string(round(Integer,time())),boardparams=[];unitparams=["
 	end
 	game=Game(name,map,Group[],Unit[],Unit[],unitparams,color,colors,colind,colmax, colock,delete,sequence,board,printscore,points,season,win,window,0,0,Dict(),autoharvest)
 	placeseq!(game)	
-	sync!(game)
 	if win==0
 		box=GtkBox(:h)
 		savebtn=GtkButton("Save")
 		loadbtn=GtkButton("Load")
 		nameentry=GtkEntry()
 		setproperty!(nameentry,:text,game.name)
-		scorelabel=GtkLabel(pointslabel(game))
-		newslabel=GtkLabel(infolabel(game))
+		scorelabel=GtkLabel("")#pointslabel(game))
+		newslabel=GtkLabel("")#infolabel(game))
 		passbtn=GtkButton("Next color")
 		backbtn=GtkButton("Prev color")
 		#colabel=GtkLabel(string(game.color))
@@ -107,9 +106,10 @@ function newgame(name=string(round(Integer,time())),boardparams=[];unitparams=["
 		Gtk.G_.value(spexpy,0)
 		spexpshell=GtkSpinButton(0:1000)
 		Gtk.G_.value(spexpshell,game.board.shells+1)
-		xexplabel=GtkLabel("X loc")
-		yexplabel=GtkLabel("Y loc")
+		xexplabel=GtkLabel("X")
+		yexplabel=GtkLabel("Y")
 		shellexplabel=GtkLabel("Radius")
+		placebtn=GtkButton("Place unit at")
 		expbtn=GtkButton("Expand board at (X,Y)")
 		centerbtn=GtkButton("Center board on (X,Y)")
 		deletecheck=GtkCheckButton("Enable deletion")
@@ -147,14 +147,15 @@ function newgame(name=string(round(Integer,time())),boardparams=[];unitparams=["
 		g[2,6]=zoomscale
 		g[2,7]=xoscale
 		g[2,8]=yoscale
-		g[1,9]=xexplabel
-		g[1,10]=yexplabel
-		g[2,9]=spexpx
-		g[2,10]=spexpy
-		g[1,11]=shellexplabel
-		g[2,11]=spexpshell
+		g[2,9]=placebtn
+		g[1,10]=xexplabel
+		g[1,11]=yexplabel
+		g[2,10]=spexpx
+		g[2,11]=spexpy
+		g[1,13]=shellexplabel
+		g[2,13]=spexpshell
 		g[2,12]=expbtn
-		g[2,13]=centerbtn
+		g[2,14]=centerbtn
 		push!(box,game.board.c)	
 		push!(box,g)
 		game.g=g
@@ -204,9 +205,6 @@ function newgame(name=string(round(Integer,time())),boardparams=[];unitparams=["
 			game.board.pany=-Gtk.G_.value(widget)*10
 			drawboard(game)
 		end
-		#id = signal_connect(autoharvestcheck, "clicked") do widget
-		#	game.autoharvest=getproperty(widget,:active,Bool)
-		#end
 		id = signal_connect(colockcheck, "clicked") do widget
 			game.colock=getproperty(widget,:active,Bool)
 		end
@@ -218,21 +216,20 @@ function newgame(name=string(round(Integer,time())),boardparams=[];unitparams=["
 			y=Gtk.G_.value(spexpy)
 			r=Gtk.G_.value(spexpshell)
 			remain=expandboard!(game,Integer(r),[(x,y,2)])
-			#if remain<0
-			#	println(abs(remain)," too few black points.")
-			#end
 		end
 		id = signal_connect(centerbtn, "clicked") do widget
-			#xadj=Gtk.Adjustment(xoscale)
-			#setproperty!(xadj,:value,0)
 			x=Gtk.G_.value(spexpx)
 			y=Gtk.G_.value(spexpy)
 			center(game,(x,y))
 		end
+		id = signal_connect(placebtn, "clicked") do widget
+			x=Gtk.G_.value(spexpx)
+			y=Gtk.G_.value(spexpy)
+			nu=newunit(game.color,(x,y,2),units[game.unitparams[end]])
+			placeunit!(game,nu)
+			drawboard(game)
+		end
 	end
-#	if points==[0,0,0,0,0]
-#		harvest!(game)
-#	end
 	@guarded function drawsignal(widget)
 		ctx=getgc(widget)
 		h=height(widget)
@@ -284,6 +281,9 @@ function newgame(name=string(round(Integer,time())),boardparams=[];unitparams=["
 		drawboard(game,ctx,w,h)
 		reveal(widget)
 	end
+	#GAccessor.text(game.gui[:scorelabel],pointslabel(game))
+	#GAccessor.text(game.gui[:newslabel],infolabel(game))
+	sync!(game)
 	show(game.board.c)
 	return game
 end
