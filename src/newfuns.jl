@@ -131,13 +131,12 @@ function newgame(name=string(round(Integer,time())),boardparams=[];unitparams=["
 		g=GtkGrid()
 		g[1,1]=savebtn
 		g[2,1]=nameentry
-		g[3,1]=loadbtn
+		#g[3,1]=loadbtn #unknown function segmentation fault, stacktrace doesn't list any weilianqi function
 		g[1,2]=scorelabel
 		g[2,2]=newslabel
 		g[2,4]=deletecheck
 		g[1,3]=passbtn
 		g[1,4]=backbtn
-		#g[1,4]=autoharvestcheck
 		g[2,3]=colockcheck
 		g[1,5]=clabel1
 		g[3,5]=clabel2
@@ -161,7 +160,6 @@ function newgame(name=string(round(Integer,time())),boardparams=[];unitparams=["
 		push!(box,game.board.c)	
 		push!(box,g)
 		game.g=g
-		#game.gui[:harvestbtn]=harvestbtn
 		game.gui[:scorelabel]=scorelabel
 		game.gui[:newslabel]=newslabel
 		game.gui[:yoscale]=yoscale
@@ -278,7 +276,7 @@ function newgame(name=string(round(Integer,time())),boardparams=[];unitparams=["
 			end
 			#GAccessor.text(scorelabel,pointslabel(game))
 			#updategroups!(game)
-			sync!(game)
+			#sync!(game)
 		end
 		drawboard(game,ctx,w,h)
 		reveal(widget)

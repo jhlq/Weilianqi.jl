@@ -174,7 +174,7 @@ function sync!(game::Game)
 	GAccessor.text(game.gui[:newslabel],infolabel(game))
 end
 function placeable(game,unit::Unit)
-	if game.map[unit.loc]!=0
+	if haskey(game.map,unit.loc) && game.map[unit.loc]!=0
 		return false
 	elseif !in(unit.loc[3],unit.pl)
 		return false
@@ -193,6 +193,7 @@ function placeunit!(game,unit)
 		if unit.canspawn && !in(unit,game.spawns)
 			push!(game.spawns,unit)
 		end
+		sync!(game)
 	end
 	return "<3"
 end
@@ -217,6 +218,7 @@ function removeunit!(game,unit::Unit)
 		i=findunit(unit,game.spawns)
 		deleteat!(game.spawns,i)
 	end
+	sync!(game)
 	return "<3"
 end
 
@@ -304,8 +306,8 @@ function unitharvest(game,unit,ledger,partial=1)
 	return points
 end
 
-function checkharvest(game,unit::Unit,ledger)
-	return unit.harvest(game,unit,ledger)
+function checkharvest(game,unit::Unit,ledger,partial=1)	#| ^
+	return unit.harvest(game,unit,ledger,partial)	#L_|
 end
 function checkharvest(game,group::Group,ledger)
 	points=[[0.0,0,0],0.0,0,0,0]
@@ -327,19 +329,30 @@ function checkharvest(game::Game,sync::Bool=true)
 	ledger=newledger(game)
 	points=[[0.0,0,0],0.0,0,0,0]
 	for group in game.groups
-		points+=checkharvest(game,group,ledger)
+		#points+=checkharvest(game,group,ledger)
 # !
-#		group.harvested=true
-#		for unit in group.units
-#			unit.harvested=true
-#		end
+		for unit in group.body
+			points+=checkharvest(game,unit,ledger)
+			unit.harvested=true
+		end
 	end
-#	for group in game.groups
-#		group.harvested=false
-#		for unit in group.units
-#			unit.harvested=false
-#		end
-#	end	
+	for group in game.groups
+# !
+		for unit in group.units
+			if !unit.harvested || unit.harvested<1
+				partial=min(1/3,1-unit.harvested)
+				points+=checkharvest(game,unit,ledger,partial)
+				unit.harvested+=partial
+			end
+		end
+		group.harvested=true
+	end
+	for group in game.groups
+		group.harvested=false
+		for unit in group.units
+			unit.harvested=false
+		end
+	end	
 #may need to do this to avoid units in multiple groups to multiharvest, but can't do it now because it should harvest to the group where it is in the body, so have to harvest with bodies first. Or let it harvest partially
 	return points
 end
