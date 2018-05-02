@@ -227,6 +227,7 @@ function newgame(name=string(round(Integer,time())),boardparams=[];unitparams=["
 			y=Gtk.G_.value(spexpy)
 			nu=newunit(game.color,(x,y,2),units[game.unitparams[end]])
 			placeunit!(game,nu)
+			sync!(game)
 			drawboard(game)
 		end
 	end
@@ -276,7 +277,7 @@ function newgame(name=string(round(Integer,time())),boardparams=[];unitparams=["
 			end
 			#GAccessor.text(scorelabel,pointslabel(game))
 			#updategroups!(game)
-			#sync!(game)
+			sync!(game)
 		end
 		drawboard(game,ctx,w,h)
 		reveal(widget)
