@@ -70,7 +70,6 @@ function newgame(name=string(round(Integer,time())),boardparams=[];unitparams=["
 		map[loc]=0
 	end
 	game=Game(name,map,Group[],Unit[],Unit[],unitparams,color,colors,colind,colmax, colock,delete,sequence,board,printscore,points,season,win,window,0,0,Dict(),autoharvest)
-	placeseq!(game)	
 	if win==0
 		box=GtkBox(:h)
 		savebtn=GtkButton("Save")
@@ -227,7 +226,7 @@ function newgame(name=string(round(Integer,time())),boardparams=[];unitparams=["
 			y=Gtk.G_.value(spexpy)
 			nu=newunit(game.color,(x,y,2),units[game.unitparams[end]])
 			placeunit!(game,nu)
-			sync!(game)
+			#sync!(game)
 			drawboard(game)
 		end
 	end
@@ -277,13 +276,14 @@ function newgame(name=string(round(Integer,time())),boardparams=[];unitparams=["
 			end
 			#GAccessor.text(scorelabel,pointslabel(game))
 			#updategroups!(game)
-			sync!(game)
+			#sync!(game)
 		end
 		drawboard(game,ctx,w,h)
 		reveal(widget)
 	end
 	#GAccessor.text(game.gui[:scorelabel],pointslabel(game))
 	#GAccessor.text(game.gui[:newslabel],infolabel(game))
+	placeseq!(game)	
 	sync!(game)
 	show(game.board.c)
 	return game
