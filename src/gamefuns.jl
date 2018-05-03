@@ -193,7 +193,6 @@ function placeunit!(game,unit)
 		if unit.canspawn && !in(unit,game.spawns)
 			push!(game.spawns,unit)
 		end
-		sync!(game)
 	end
 	return "<3"
 end
@@ -218,7 +217,6 @@ function removeunit!(game,unit::Unit)
 		i=findunit(unit,game.spawns)
 		deleteat!(game.spawns,i)
 	end
-	sync!(game)
 	return "<3"
 end
 
