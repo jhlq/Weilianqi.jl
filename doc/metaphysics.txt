@@ -18,4 +18,4 @@ Organic layers can be grown on coloredly enclosed terrain, like kombucha symbiot
 
 Metagame: create games with arbitrary rules that use this board as a tool. If there are implementable changes submit pull request or open issue.
 
-
+All points are made of white points in black points in a white point. LOL (triangle circle triangle), white black white
