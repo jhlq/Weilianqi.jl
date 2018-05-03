@@ -1,4 +1,4 @@
-colorsets=[[(1,0,0),(0,1,0),(0,0,1),(1/2,0,1/2),(1/4,1/2,1/4)],[(1,0,0),(0,1,0),(0,0,1),(1/2,1/2,0),(1/2,0,1/2),(0,1/2,1/2),(0.15,0.7,0.15)]]
+colorsets=[[(1,0,0),(0,1,0),(0,0,1),(1/2,0,1/2),(1/4,1/2,1/4),(1,1,1)],[(1,0,0),(0,1,0),(0,0,1),(1/2,1/2,0),(1/2,0,1/2),(0,1/2,1/2),(0.15,0.7,0.15)]]
 setcolorset=(game,set::Int=2)->game.colors=colorsets[set] #modify game.color to set a temporary custom color
 
 units=Dict("standard"=>Dict(:name=>"standard", :ir=>2, :pl=>[2])) #change :pl to [1,2,3] to place anywhere

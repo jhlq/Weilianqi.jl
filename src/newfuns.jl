@@ -276,7 +276,7 @@ function newgame(name=string(round(Integer,time())),boardparams=[];unitparams=["
 			end
 			#GAccessor.text(scorelabel,pointslabel(game))
 			#updategroups!(game)
-			#sync!(game)
+			sync!(game)
 		end
 		drawboard(game,ctx,w,h)
 		reveal(widget)

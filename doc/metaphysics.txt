@@ -1,0 +1,5 @@
+Make arbitrary animations with moving parts and timelayers.
+
+Create timelayers, or dimensional layers that change physical constants. Bees, more bees, bees that can fly across dimensions.
+
+We create streams of consciousness across the undefined darkness
