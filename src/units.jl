@@ -6,18 +6,13 @@ units=Dict("standard"=>Dict(:name=>"standard", :ir=>2, :pl=>[2])) #change :pl to
 units["tunnel"]=Dict(:name=>"tunnel", :ir=>0, :pl=>[1]) #these by default cannot be placed under/over surrounded territory without permission, such permissions are not hard coded but may rather result in a rejected/modified merge request
 units["bridge"]=Dict(:name=>"bridge", :ir=>0, :pl=>[3])
 units["queen"]=Dict(:name=>"queen", :canspawn=>true, :graphic=>[(0.5,0.5),(-0.5,0.5),(0,-0.5)])
+units["vein"]=Dict(:name=>"vein", :ir=>0, :pl=>[2])
 #units["universal"]=Dict(:name=>"universal", :canspawn=>true, :ir=>3, :pl=>[1,2,3],:graphic=>[(0.5,-0.5),(-0.5,-0.5),(0,0.5)]) #this one has some weird scoring issues, sometimes adds score then subtracts it the next move. Anyways not really meant to be generally used since it overrides the need to connect (like playing with only (super)queens), more like a GM unit
 #units[:storage] :canstore=>true, :storemax=> #for storing (duh!)
 
 #white unit is a spawn for all colors whereas any unit with color (1,1,1) "is" every color, so a white spawn is a spawn for all and "white" as a unit spec can be removed. White superpowers are being reduced, "units" facilitating multiple color connections can be built with tunnel and bridge units. White now has metaphysical superpowers, perfect storage
-#=
-function white_harvest(game,unit)
-	p=[12,0,0,0,12]
-	#game.points.+=p
-	return p
-end
-units["white"]=Dict(:harvest=>white_harvest, :name=>"white", :inclusive=>true, :passover=>true, :baselife=>18, :canspawn=>true)
-=#
+#units["white"]=Dict(:harvest=>white_harvest, :name=>"white", :inclusive=>true, :passover=>true, :baselife=>18, :canspawn=>true)
+#build white unitsets, like molecules with colored branches
 function standard_costfun(game,unit) #costs have been removed, our hive will dispatch all units proposed that create agreeable formations 
 	distance=nearestwhite(game,unit.loc,unit.loc[3]==2)
 	cost=distance*unitparams[2]

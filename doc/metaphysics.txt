@@ -13,3 +13,5 @@ Black units are also present everywhere, providing the lite points and spawning 
 Standard white units are stargates, warp in objects with loop shape
 
 Organic layers can be grown on coloredly enclosed terrain, like kombucha symbiotic cultures. Open up a new board, include location info in name, place symbiotic culture veins and cells
+
+Metagame: create a games with arbitrary rules that use this board as a tool. If there are implementable changes submit pull request or open issue.
