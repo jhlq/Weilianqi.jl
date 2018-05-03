@@ -1,3 +1,13 @@
+Make snowflakes of light, lightflakes. With entrance units. What about entrance pussels? Yea, get in with the right pieces. Movable parts? Oooh! Press this button to lift this set of units. Unitset types! Develop sets! 
+
+More tests! Why does travis test on 0.4? https://travis-ci.org/jhlq/Equations.jl Why do official JuliaGraphics packages fail tests? Dunno... ~.^ Zaaambiiieees, pollinating treeflowers. Treeflowerpollinating game! Make treesets and zambieepaths, loops can hold several zambiees!
+                  
+                   zambieehive
+         /`.',"/ * \_  L,.,..,,,.,'
+|_  _|´` ^./__Y     /_/
+|    |
+|\   |
+
 Tunnelrace! 6 vertices of a giant hexagon hold storages with various surplusses, by connecting all of them with corresponding colors imbalances can be balanced. Only the first to connect across the board can do it without making tunnels..!
 
 How about letting players move simultaneously and let their moves be in superpositions? Either resolved randomly where players may lay extra potential moves or by playing another game on the contested location.
