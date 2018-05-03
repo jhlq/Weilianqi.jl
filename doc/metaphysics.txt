@@ -3,3 +3,11 @@ Make arbitrary animations with moving parts and timelayers.
 Create timelayers, or dimensional layers that change physical constants. Bees, more bees, bees that can fly across dimensions.
 
 We create streams of consciousness across the undefined darkness
+
+#No one is innocent, by design. Everyone contributes by meditation. Meditation amplifies consciousness
+
+Unittypes can be color coded, place darker red to imply a storage unit, or rainbow to have a multicolor connection central. Units with color (1,1,1) are special units that exactly fill up a hexagon without taking any space, maybe existing on a parallel plane
+
+Black units are also present everywhere, providing the lite points and spawning queens.
+
+Standard white units are stargates, warp in objects with loop shape
