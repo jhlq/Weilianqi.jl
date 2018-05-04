@@ -408,9 +408,26 @@ function drawboard(game,ctx,w,h)
 	set_source_rgb(ctx, game.color...)
 	arc(ctx, size, size, 3size, 0, 2pi)
 	fill(ctx)
-	set_source_rgb(ctx, game.board.gridcolor...)
 	offx=game.board.offsetx+game.board.panx
 	offy=game.board.offsety+game.board.pany
+	for (lo,lif) in game.lifemap
+		if sum(lif)>0 && lo[3]==2
+			offset=(offx,offy)
+			#if lo[3]==1
+			#	offset=offset.+(-cos(pi/6)*size,sin(pi/6)*size)
+			#elseif lo[3]==3
+			#	offset=offset.+(-cos(pi/6)*size,-sin(pi/6)*size)
+			#end
+			plo=hex_to_pixel(lo[1],lo[2],size)
+			ploc=(plo[1]+offset[1]+w/2,plo[2]+offset[2]+h/2)
+			rad=size*0.866/2
+			col=lif./(lif+3)
+			set_source_rgb(ctx, col...)
+			arc(ctx,ploc[1],ploc[2],rad*2, 0, 2pi)
+			fill(ctx)
+		end
+	end
+	set_source_rgb(ctx, game.board.gridcolor...)
 	for loc in game.board.grid
 		if loc[3]==2
 			x,y=hex_to_pixel(loc[1],loc[2],size)
@@ -418,8 +435,8 @@ function drawboard(game,ctx,w,h)
 		end
 	end
 	for unit in game.units
-		set_source_rgb(ctx,unit.color...)
 		offset=(offx,offy)
+		set_source_rgb(ctx,unit.color...)
 		if unit.loc[3]==1
 			offset=offset.+(-cos(pi/6)*size,sin(pi/6)*size)
 		elseif unit.loc[3]==3
@@ -431,9 +448,9 @@ function drawboard(game,ctx,w,h)
 		arc(ctx,floc[1],floc[2],rad, 0, 2pi) #why isn't the circle radius the distance between locs? Whyyyy whyyyy someone pleeease fiiix
 		fill(ctx)
 		#unit border:
-		#set_source_rgb(ctx,game.board.gridcolor...) 
-		#arc(ctx, loc[1]+offset[1]+w/2, loc[2]+offset[2]+h/2, size/3, 0, 2pi)
-		#stroke(ctx)
+		set_source_rgb(ctx,game.board.gridcolor...) 
+		arc(ctx, loc[1]+offset[1]+w/2, loc[2]+offset[2]+h/2, rad, 0, 2pi)
+		stroke(ctx)
 		if !isempty(unit.graphic)
 			set_source_rgb(ctx,game.board.bgcolor...)
 			points=Point[]
