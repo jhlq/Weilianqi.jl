@@ -273,7 +273,7 @@ function getpoints!(game,unit,loc,distance,ledger,partial=1) #remake cleaner. Me
 end
 function unitharvest(game,unit,ledger,partial=1)
 	points=[[0.0,0,0],0.0,0,0,0]
-	if unit.harvested || unit.harvested>=1
+	if unit.harvested>=1
 		return points
 	end
 
@@ -338,7 +338,7 @@ function checkharvest(game::Game,sync::Bool=true)
 	for group in game.groups
 # !
 		for unit in group.units
-			if !unit.harvested || unit.harvested<1
+			if unit.harvested<1
 				partial=min(1/3,1-unit.harvested)
 				points+=checkharvest(game,unit,ledger,partial)
 				unit.harvested+=partial
