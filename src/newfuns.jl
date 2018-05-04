@@ -186,7 +186,6 @@ function newgame(name=string(round(Integer,time())),boardparams=[];unitparams=["
 		end
 		signal_connect(unitscombo, "changed") do widget, others...
 			unitname=Gtk.bytestring( GAccessor.active_text(unitscombo) ) 
-			#println("Active element is \"$unitname\" at index $idx")
 			game.unitparams[end]=unitname
 		end
 		id = signal_connect(zoomscale, "value-changed") do widget
@@ -195,7 +194,6 @@ function newgame(name=string(round(Integer,time())),boardparams=[];unitparams=["
 			x=Gtk.G_.value(spexpx)
 			y=Gtk.G_.value(spexpy)
 			center(game,(x,y))
-#			drawboard(game)
 		end
 		id = signal_connect(xoscale, "value-changed") do widget
 			game.board.panx=-Gtk.G_.value(widget)*10
@@ -275,15 +273,11 @@ function newgame(name=string(round(Integer,time())),boardparams=[];unitparams=["
 			if game.printscore
 				printpoints(game)
 			end
-			#GAccessor.text(scorelabel,pointslabel(game))
-			#updategroups!(game)
 			sync!(game)
 		end
 		drawboard(game,ctx,w,h)
 		reveal(widget)
 	end
-	#GAccessor.text(game.gui[:scorelabel],pointslabel(game))
-	#GAccessor.text(game.gui[:newslabel],infolabel(game))
 	placeseq!(game)	
 	sync!(game)
 	show(game.board.c)
