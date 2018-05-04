@@ -421,7 +421,7 @@ function drawboard(game,ctx,w,h)
 			plo=hex_to_pixel(lo[1],lo[2],size)
 			ploc=(plo[1]+offset[1]+w/2,plo[2]+offset[2]+h/2)
 			rad=size*0.866/2
-			col=lif/10
+			col=lif./(lif+3)
 			set_source_rgb(ctx, col...)
 			arc(ctx,ploc[1],ploc[2],rad*2, 0, 2pi)
 			fill(ctx)
