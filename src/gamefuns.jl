@@ -168,9 +168,10 @@ function getgroups(game)
 	return groups
 end
 function sync!(game::Game)
-	game.groups=getgroups(game)
 	game.lifemap=unitslive(game)
-	GAccessor.text(game.gui[:scorelabel],pointslabel(game,false))
+	game.groups=getgroups(game)
+	game.points=checkharvest(game,false)
+	GAccessor.text(game.gui[:scorelabel],pointslabel(game))
 	GAccessor.text(game.gui[:newslabel],infolabel(game))
 end
 function placeable(game,unit::Unit)
@@ -253,6 +254,7 @@ function getpoints!(game,unit,loc,distance,ledger,partial=1) #remake cleaner. Me
 		points[1]=points[1].+h.*unit.color
 		#l[ci]-=h
 		ll[1]=ll[1]+points[1]
+#if unit.color==(0,0,1);println(loc,ll,l);end #useful for debugging
 	else
 		#l=l-ll[2:4] #something is wrong here... Aha! Green doesn't harvest green, green harvests blue!
 		l[1]-=ll[4]
@@ -266,7 +268,6 @@ function getpoints!(game,unit,loc,distance,ledger,partial=1) #remake cleaner. Me
 				ll[c+1]+=points[c+1]
 			end
 		end
-#if ll[3]!=0 && unit.color==(0,1,0);println(loc,ll,l);end #useful for debugging
 	end
 	return points
 end
@@ -374,7 +375,7 @@ function bonds(game)
 	return Int(nc/2)
 end
 function pointslabel(game,sync::Bool=true)
-	points=checkharvest(game,sync)
+	points=game.points #checkharvest(game,sync)
 	bp=round.(points[1],1)
 	points[1]=0
 	points=round.(points,1)

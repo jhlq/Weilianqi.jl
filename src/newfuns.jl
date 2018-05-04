@@ -270,13 +270,11 @@ function newgame(name=string(round(Integer,time())),boardparams=[];unitparams=["
 					game.color=game.colors[game.colind]
 				end
 			end
-			if game.printscore
-				printpoints(game)
-			end
 			sync!(game)
+			drawboard(game,ctx,w,h)
+			reveal(widget)
 		end
-		drawboard(game,ctx,w,h)
-		reveal(widget)
+		sync!(game) #sync twice to correct corruptions of reality, usually works
 	end
 	placeseq!(game)	
 	sync!(game)

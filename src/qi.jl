@@ -94,6 +94,7 @@ function loadic!(game,dic::Dict,originoffset=(0,0,0))
 			removeunit!(game,entry[2])
 		end
 	end
+	sync!(game)
 	return game
 end
 function loadic(dic::Dict,originoffset=(0,0,0))
