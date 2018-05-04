@@ -436,7 +436,6 @@ function drawboard(game,ctx,w,h)
 	end
 	for unit in game.units
 		offset=(offx,offy)
-		set_source_rgb(ctx,unit.color...)
 		if unit.loc[3]==1
 			offset=offset.+(-cos(pi/6)*size,sin(pi/6)*size)
 		elseif unit.loc[3]==3
@@ -445,12 +444,13 @@ function drawboard(game,ctx,w,h)
 		loc=hex_to_pixel(unit.loc[1],unit.loc[2],size)
 		floc=(loc[1]+offset[1]+w/2,loc[2]+offset[2]+h/2)
 		rad=size*0.866/2
-		arc(ctx,floc[1],floc[2],rad, 0, 2pi) #why isn't the circle radius the distance between locs? Whyyyy whyyyy someone pleeease fiiix
-		fill(ctx)
 		#unit border:
 		set_source_rgb(ctx,game.board.gridcolor...) 
-		arc(ctx, loc[1]+offset[1]+w/2, loc[2]+offset[2]+h/2, rad, 0, 2pi)
+		arc(ctx, floc[1],floc[2],rad+1, 0, 2pi)
 		stroke(ctx)
+		set_source_rgb(ctx,unit.color...)
+		arc(ctx,floc[1],floc[2],rad, 0, 2pi) #why isn't the circle radius the distance between locs? Whyyyy whyyyy someone pleeease fiiix
+		fill(ctx)
 		if !isempty(unit.graphic)
 			set_source_rgb(ctx,game.board.bgcolor...)
 			points=Point[]
@@ -463,8 +463,6 @@ function drawboard(game,ctx,w,h)
 	end
 	#showall(game.board.win) #should probably look up the difference between all these revealing methods
 	reveal(game.board.c)
-	#GAccessor.text(game.gui[:scorelabel],pointslabel(game))
-	#GAccessor.text(game.gui[:newslabel],infolabel(game))
 end
 function drawboard(game::Game)
 	ctx=getgc(game.board.c)
