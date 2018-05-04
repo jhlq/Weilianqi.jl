@@ -190,7 +190,8 @@ function newgame(name=string(round(Integer,time())),boardparams=[];unitparams=["
 			game.unitparams[end]=unitname
 		end
 		id = signal_connect(zoomscale, "value-changed") do widget
-			game.board.sizemod=Gtk.G_.value(widget)/10
+			wval=Gtk.G_.value(widget)
+			game.board.sizemod=wval/10+exp(wval/100)
 			x=Gtk.G_.value(spexpx)
 			y=Gtk.G_.value(spexpy)
 			center(game,(x,y))

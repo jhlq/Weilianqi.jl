@@ -507,7 +507,7 @@ function pass!(game,nomax::Bool=false,reverse::Bool=false)
 end
 
 function center(game,hex)
-	game.board.sizemod=Gtk.G_.value(game.gui[:zadj])/10
+	#game.board.sizemod=Gtk.G_.value(game.gui[:zadj])/10
 	game.board.size=game.window[2]/(game.board.shells*game.board.sizemod)
 	loc=hex_to_pixel(hex[1],hex[2],game.board.size)
 	game.board.offsetx=-loc[1]+getproperty(game.gui[:xadj],:value,Float64)
