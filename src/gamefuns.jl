@@ -56,6 +56,9 @@ end
 function spreadlife!(game,unit,lifemap)
 	white=(1,1,1)
 	hex=unit.loc
+	if !in(hex,keys(lifemap))
+		return lifemap
+	end
 	lifemap[hex].+=unit.baselife.*unit.color
 	temp=Dict(hex=>unit.baselife)
 	checked=[hex]
@@ -338,7 +341,7 @@ function checkharvest(game::Game,sync::Bool=true)
 	for group in game.groups
 # !
 		for unit in group.units
-			if unit.harvested<1
+			if float(unit.harvested)<1
 				partial=min(1/3,1-unit.harvested)
 				points+=checkharvest(game,unit,ledger,partial)
 				unit.harvested+=partial
