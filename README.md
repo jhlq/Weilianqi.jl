@@ -23,7 +23,7 @@ There are many ways to initialize the board, most can be obtained manually by de
 g1=newgame("normal",sequence=[newunit((1,0,0),(-1,1,2),units["queen"]),newunit((0,1,0),(0,-1,2),units["queen"]),newunit((0,0,1),(1,0,2),units["queen"])]);
 g2=newgame("split",[5,[(-15,0,2),(0,15,2),(15,-15,2)],15],sequence=[newunit((1,0,0),(-15,0,2),units["queen"]),newunit((0,1,0),(0,15,2),units["queen"]),newunit((0,0,1),(15,-15,2),units["queen"])]);
 r1=rand(Int)%10;r2=rand(Int)%10;g3=newgame("stochastic",[3,[(0,0,2),(3+r1,3+r2,2)]],sequence=[newunit((1,0,0),(0,0,2),units["queen"]),newunit((0,1,0),(3+r1,3+r2,2),units["queen"])]);
-#coming soon newgame("tunnelrace")
+g4=newgame("race",[15,[(0,0,2)],15],sequence=[newunit((1,0,0),(-15,0,2),units["queen"]),newunit((1,0,0),(15,0,2),units["queen"]),newunit((0,1,0),(0,15,2),units["queen"]),newunit((0,1,0),(0,-15,2),units["queen"]),newunit((0,0,1),(15,-15,2),units["queen"]),newunit((0,0,1),(-15,15,2),units["queen"])]); #be first to connect
 ```
 
 Type save(game) in console to save the game, loadgame("name") to load it. Savefiles are stored in ~/weilianqi/saves/ and the name can be changed with game.name="newname" or through the textbox when using the buttons.
