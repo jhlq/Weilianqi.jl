@@ -69,13 +69,13 @@ function loadic!(game,dic::Dict,originoffset=(0,0,0))
 	if haskey(dic,:colock)
 		game.colock=dic[:colock]
 	end
-	setproperty!(game.gui[:colockcheck],:active,game.colock)
+	set_gtk_property!(game.gui[:colockcheck],:active,game.colock)
 	if haskey(dic,:delete)
 		game.delete=dic[:delete]
 	end
-	setproperty!(game.gui[:deletecheck],:active,game.delete)
+	set_gtk_property!(game.gui[:deletecheck],:active,game.delete)
 	if haskey(dic,:initlocs) #&& game.board.initlocs!=dic[:initlocs]
-		unshift!(dic[:sequence],(:expand,[dic[:shells],dic[:initlocs]])) #let's hope this works
+		pushfirst!(dic[:sequence],(:expand,[dic[:shells],dic[:initlocs]])) #let's hope this works
 	end
 	for entry in dic[:sequence]
 		if isa(entry,Dict)
@@ -109,14 +109,14 @@ end
 function loadgame!(game::Game,name::String,originoffset=(0,0,0),backtrack::Integer=0)
 	path=joinpath(homedir(),"weilianqi","saves",name)
 	lines=readlines(path)
-	dic=eval(parse(lines[end-backtrack]))
+	dic=eval(Meta.parse(lines[end-backtrack]))
 	loadic!(game,dic,originoffset)
 	return game
 end
 function loadgame(name::String,backtrack::Integer=0)
 	path=joinpath(homedir(),"weilianqi","saves",name)
 	lines=readlines(path)
-	dic=eval(parse(lines[end-backtrack]))
+	dic=eval(Meta.parse(lines[end-backtrack]))
 	if isa(dic,Dict)
 		game=loadic(dic)
 	else

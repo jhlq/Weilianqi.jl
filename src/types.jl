@@ -1,4 +1,4 @@
-type Unit
+mutable struct Unit
 	color
 	ir::Integer #influence radius
 	pl::Array{Int,1} #permitted layers
@@ -17,7 +17,7 @@ type Unit
 	graphic::Array #of vertices (x,y) where x is distance in radians from origin
 	extra #for arbitrary functionality, define your own units and add them to units in units.jl
 end
-type Group
+mutable struct Group
 	spawns
 	body
 	units
@@ -26,7 +26,7 @@ type Group
 	#allowdebt::Bool #should require sudo password irl, finally got that degree because of pressure from society and now you want to relax to get the creative juices going? Well tough luck, into the hamsterwheel, slave! For being self-proclaimed planetary rulers humen don't seem to have all that much time, baboons can be more with their children. But hey, they have money, gotta give em that, they cut down the trees they need to breathe and caused the largest mass extinction since the dinosaurs to play a game of who has most...
 	harvested::Bool
 end
-type Board
+mutable struct Board
 	shells::Integer #layers of locations to add to the initial ones
 	initlocs #initial locations
 	grid
@@ -41,7 +41,7 @@ type Board
 	gridcolor
 	#expandbasecost::Number #deprecated because creating new land where our units can live free is not something that should be hindered... You want to make more baby units then go right ahead, we will even help you!
 end
-type Game
+mutable struct Game
 	name::String #defaults to a timestamp, a good name makes Game feel special and unique
 	map #add locations here without changing board.grid to go offgrid!
 	groups #units like grouping around babymakers

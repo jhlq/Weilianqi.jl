@@ -1,0 +1,13 @@
+name = "Weilianqi"
+uuid = "8e1f1af7-5cf5-5de7-b2cc-924e6310b7c5"
+version = "1.0.0"
+
+[deps]
+Graphics = "a2bd30eb-e257-5431-a919-1863eab51364"
+Gtk = "4c0ca9eb-093a-5379-98c5-f87ac0bbbf44"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[compat]
+Graphics = "0.4, 1"
+Gtk = "0.18, 1"
+julia = "1"

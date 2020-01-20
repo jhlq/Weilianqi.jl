@@ -234,7 +234,7 @@ end
 function getpoints!(game,unit,loc,distance,ledger,partial=1) #remake cleaner. Meaning, more humanreadable? ll lci llm l lci lif. OMG this place is bugprone, readability helps. 
 	llm=game.lifemap[loc] #local lifemap
 	ll=ledger[loc]
-	lif=distance==0?unit.baselife:(unit.baselife/6/distance)
+	lif=distance==0 ? unit.baselife : (unit.baselife/6/distance)
 	lif=lif*partial
 	ncol=numcolors(llm)
 	l=llm.-ll[5] #local life - lightharvest
@@ -251,7 +251,7 @@ function getpoints!(game,unit,loc,distance,ledger,partial=1) #remake cleaner. Me
 		l=llm.-ll[5]
 	end
 	if ncol==1 && game.map[loc]==0 && sum(ll[1])<1
-		ci=l[1]==0?(l[2]==0?3:2):1
+		ci=l[1]==0 ? (l[2]==0 ? 3 : 2) : 1
 		if l[ci]>1;l[ci]=1;end
 		h=min(l[ci],lif,1)
 		points[1]=points[1].+h.*unit.color
@@ -379,9 +379,9 @@ function bonds(game)
 end
 function pointslabel(game,sync::Bool=true)
 	points=game.points #checkharvest(game,sync)
-	bp=round.(points[1],1)
+	bp=round.(points[1];digits=1)
 	points[1]=0
-	points=round.(points,1)
+	points=round.(points;digits=1)
 	return "Points!\nLite:\nRed\t$(bp[1])\nGreen\t$(bp[2])\nBlue\t$(bp[3])\nLife:\nRed\t$(points[2])\nGreen\t$(points[3])\nBlue\t$(points[4])\nLight:\t$(points[5])"
 end
 function infolabel(game)
@@ -389,7 +389,7 @@ function infolabel(game)
 	for unit in game.units
 		rgb.+=unit.color
 	end
-	rgb=round.(rgb,1)
+	rgb=round.(rgb;digits=1)
 	return "Information!\nUnits: $(length(game.units))\nRed: $(rgb[1])\nGreen: $(rgb[2])\nBlue: $(rgb[3])\nBonds: $(bonds(game))"
 end
 function undo!(game) #wont undo captures? Maybe when reloading sequence. There aren't captures anymore. Wont undo board expansions. Maybe it should? Not much use now... Easy right, just pop the seq and reload
@@ -425,7 +425,7 @@ function drawboard(game,ctx,w,h)
 			plo=hex_to_pixel(lo[1],lo[2],size)
 			ploc=(plo[1]+offset[1]+w/2,plo[2]+offset[2]+h/2)
 			rad=size*0.866/2
-			col=lif./(lif+3)
+			col=lif./(lif.+3)
 			set_source_rgb(ctx, col...)
 			arc(ctx,ploc[1],ploc[2],rad*2, 0, 2pi)
 			fill(ctx)
@@ -514,8 +514,8 @@ function center(game,hex)
 	#game.board.sizemod=Gtk.G_.value(game.gui[:zadj])/10
 	game.board.size=game.window[2]/(game.board.shells*game.board.sizemod)
 	loc=hex_to_pixel(hex[1],hex[2],game.board.size)
-	game.board.offsetx=-loc[1]+getproperty(game.gui[:xadj],:value,Float64)
-	game.board.offsety=-loc[2]+getproperty(game.gui[:yadj],:value,Float64)
+	game.board.offsetx=-loc[1]+Gtk.G_.value(game.gui[:xadj])
+	game.board.offsety=-loc[2]+Gtk.G_.value(game.gui[:yadj])
 	drawboard(game)
 	return true
 end
